@@ -3,9 +3,9 @@ package main
 import (
 	"database/sql"
 	"log"
-	"strings"
-	"strconv"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 type _Column struct {
@@ -13,7 +13,7 @@ type _Column struct {
 	colName      string
 	position     int
 	defaultValue string
-	isNullable bool
+	isNullable   bool
 	dataType     string
 	keyType      string
 	extra        string
@@ -63,9 +63,9 @@ func loadTablesMeta(cfg *_DsnConfig, tableNames string) (_DbSchema, error) {
 
 	for tbl, cols := range dbSchema {
 		sort.Sort(cols)
-		dbSchema[tbl] = cols 
+		dbSchema[tbl] = cols
 	}
-
+	log.Printf("Loaded schema data of %d table(s) from db[%s]", len(dbSchema), cfg.dbname)
 	return dbSchema, nil
 }
 
@@ -89,26 +89,26 @@ func queryColumns(db *sql.DB, dbName string, table string, dbSchema _DbSchema) e
 		params = []interface{}{dbName, table}
 	}
 
-	err := query(db, 
+	err := query(db,
 		func(r []sql.RawBytes) {
 			if len(r) == kCols {
 				col := _Column{
-					tblName: asString(r[0]),
-					colName: asString(r[1]),
-					position: asInt(r[2]),
+					tblName:      asString(r[0]),
+					colName:      asString(r[1]),
+					position:     asInt(r[2]),
 					defaultValue: asString(r[3]),
-					isNullable: asString(r[4]) == "YES",
-					dataType: asString(r[5]),
-					keyType: asString(r[6]),
-					extra: asString(r[7]),
-					comment: asString(r[8]),
+					isNullable:   asString(r[4]) == "YES",
+					dataType:     asString(r[5]),
+					keyType:      asString(r[6]),
+					extra:        asString(r[7]),
+					comment:      asString(r[8]),
 				}
 				if _, ok := dbSchema[col.tblName]; !ok {
 					dbSchema[col.tblName] = make(_TableSchema, 0)
 				}
 				dbSchema[col.tblName] = append(dbSchema[col.tblName], col)
 			}
-		}, 
+		},
 		q, params...)
 	if err != nil {
 		return err
@@ -121,18 +121,18 @@ type rowVisitor func([]sql.RawBytes)
 
 func query(db *sql.DB, visitor rowVisitor, q string, params ...interface{}) error {
 	if rows, err := db.Query(q, params...); err != nil {
-		return err 
+		return err
 	} else {
 		defer rows.Close()
-		
-		cols, err := rows.Columns()  
+
+		cols, err := rows.Columns()
 		if err != nil {
 			return err
 		}
 		vals := make([]sql.RawBytes, len(cols))
 		ints := make([]interface{}, len(cols))
 		for i := range ints {
-	    	ints[i] = &vals[i]
+			ints[i] = &vals[i]
 		}
 		for rows.Next() {
 			if err := rows.Scan(ints...); err != nil {
@@ -146,8 +146,8 @@ func query(db *sql.DB, visitor rowVisitor, q string, params ...interface{}) erro
 
 func asString(rb sql.RawBytes) string {
 	if len(rb) > 0 {
-		return string(rb)	
-	} 
+		return string(rb)
+	}
 	return ""
 }
 

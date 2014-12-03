@@ -10,11 +10,10 @@ import (
 
 func main() {
 	var targetDb, tableNames, packageName string
-	var cleanPackage, touchTimestamp bool
+	var touchTimestamp bool
 	var pCount int
 	flag.StringVar(&targetDb, "db", "", "Target database source string: e.g. root@tcp(127.0.0.1:3306)/test?charset=utf-8")
 	flag.StringVar(&tableNames, "tables", "", "You may specify which tables the models need to be created")
-	flag.BoolVar(&cleanPackage, "clean", false, "If clean the generated code directory")
 	flag.StringVar(&packageName, "pkg", "", "Go source code package for generated models")
 	flag.BoolVar(&touchTimestamp, "dont-touch-timestamp", false, "Should touch the datetime fields with default value or on update")
 	flag.IntVar(&pCount, "p", 4, "Parallell running for code generator")
@@ -48,7 +47,9 @@ func main() {
 		log.Println("Cannot load table schemas from db.")
 		log.Fatalln(err)
 	}
-	fmt.Println(dbSchema)
+
+	codeConfig := _CodeConfig{packageName, touchTimestamp}
+	generateModels(cfg.dbname, dbSchema, codeConfig)
 }
 
 func printUsages(message ...interface{}) {
@@ -57,8 +58,4 @@ func printUsages(message ...interface{}) {
 	}
 	fmt.Println("\nUsage:")
 	flag.PrintDefaults()
-}
-
-func init() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
