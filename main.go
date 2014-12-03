@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+	"os/exec"
 	"runtime"
 )
 
@@ -50,6 +52,18 @@ func main() {
 
 	codeConfig := _CodeConfig{packageName, touchTimestamp}
 	generateModels(cfg.dbname, dbSchema, codeConfig)
+	formatCodes(packageName)
+}
+
+func formatCodes(pkg string) {
+	log.Println("Running gofmt *.go")
+	var out bytes.Buffer
+	cmd := exec.Command("gofmt", "-w", pkg)
+	cmd.Stderr = &out
+	if err := cmd.Run(); err != nil {
+		log.Println(out.String())
+		log.Fatalf("Fail to run gofmt package, %s", err)
+	}
 }
 
 func printUsages(message ...interface{}) {
