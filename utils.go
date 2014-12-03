@@ -12,6 +12,7 @@ var (
 )
 
 type _DsnConfig struct {
+	dsn    string
 	user   string
 	passwd string
 	net    string
@@ -21,7 +22,9 @@ type _DsnConfig struct {
 
 func parseDsn(dsn string) (cfg *_DsnConfig, err error) {
 	// New config with some default values
-	cfg = &_DsnConfig{}
+	cfg = &_DsnConfig{
+		dsn: dsn,
+	}
 
 	// TODO: use strings.IndexByte when we can depend on Go 1.2
 
