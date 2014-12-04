@@ -121,6 +121,10 @@ func toCapitalCase(name string) string {
 					ch = ch - 'a' + 'A'
 				}
 				segStart = false
+			} else {
+				if ch >= 'A' && ch <= 'Z' {
+					ch = ch - 'A' + 'a'
+				}
 			}
 			data[endPos] = ch
 			endPos++

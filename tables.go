@@ -6,7 +6,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"fmt"
 )
+
+var _ = fmt.Println
 
 type _Column struct {
 	tblName      string

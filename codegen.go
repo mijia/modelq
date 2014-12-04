@@ -94,7 +94,7 @@ var _ = time.Now
 
 func writeStruct(w *bufio.Writer, name string, schema _TableSchema) error {
 	typeName := toCapitalCase(name)
-	fieldTmpl := "\t%s %s `json:\"%s\"%s` // %s"
+	fieldTmpl := "\t%s %s `json:\"%s\"%s`%s"
 	fields := make([]string, len(schema))
 	for i, c := range schema {
 		name := toCapitalCase(c.colName)
@@ -102,7 +102,11 @@ func writeStruct(w *bufio.Writer, name string, schema _TableSchema) error {
 		if !ok {
 			fieldType = "string"
 		}
-		fields[i] = fmt.Sprintf(fieldTmpl, name, fieldType, c.colName, tagForField(c), c.comment)
+		comment := ""
+		if c.comment != "" {
+			comment = " // " + c.comment
+		}
+		fields[i] = fmt.Sprintf(fieldTmpl, name, fieldType, c.colName, tagForField(c), comment)
 	}
 	structTmpl := `type %s struct {
 %s
@@ -116,6 +120,9 @@ func tagForField(col _Column) string {
 	tags := make([]string, 0)
 	if col.keyType != "" && col.keyType != "NULL" {
 		tags = append(tags, col.keyType)
+	}
+	if col.defaultValue != "" {
+		tags = append(tags, "DEFAULT " + col.defaultValue)
 	}
 	if col.extra != "" && col.extra != "NULL" {
 		tags = append(tags, col.extra)
