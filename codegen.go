@@ -122,7 +122,7 @@ func tagForField(col _Column) string {
 		tags = append(tags, col.keyType)
 	}
 	if col.defaultValue != "" {
-		tags = append(tags, "DEFAULT " + col.defaultValue)
+		tags = append(tags, "DEFAULT "+col.defaultValue)
 	}
 	if col.extra != "" && col.extra != "NULL" {
 		tags = append(tags, col.extra)

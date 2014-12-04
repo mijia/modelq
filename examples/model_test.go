@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
-	"testing"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/mijia/modelq/models"
+	"log"
+	"testing"
 )
 
 var db *sql.DB

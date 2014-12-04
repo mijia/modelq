@@ -2,11 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"sort"
-	"strconv"
 	"strings"
-	"fmt"
 )
 
 var _ = fmt.Println
@@ -92,72 +91,29 @@ func queryColumns(db *sql.DB, dbName string, table string, dbSchema _DbSchema) e
 		params = []interface{}{dbName, table}
 	}
 
-	err := query(db,
-		func(r []sql.RawBytes) {
-			if len(r) == kCols {
-				col := _Column{
-					tblName:      asString(r[0]),
-					colName:      asString(r[1]),
-					position:     asInt(r[2]),
-					defaultValue: asString(r[3]),
-					isNullable:   asString(r[4]) == "YES",
-					dataType:     asString(r[5]),
-					keyType:      asString(r[6]),
-					extra:        asString(r[7]),
-					comment:      asString(r[8]),
-				}
-				if _, ok := dbSchema[col.tblName]; !ok {
-					dbSchema[col.tblName] = make(_TableSchema, 0)
-				}
-				dbSchema[col.tblName] = append(dbSchema[col.tblName], col)
+	err := dbQuery(db, q, params, func(r []sql.RawBytes) bool {
+		if len(r) == kCols {
+			col := _Column{
+				tblName:      asString(r[0]),
+				colName:      asString(r[1]),
+				position:     asInt(r[2]),
+				defaultValue: asString(r[3]),
+				isNullable:   asString(r[4]) == "YES",
+				dataType:     asString(r[5]),
+				keyType:      asString(r[6]),
+				extra:        asString(r[7]),
+				comment:      asString(r[8]),
 			}
-		},
-		q, params...)
+			if _, ok := dbSchema[col.tblName]; !ok {
+				dbSchema[col.tblName] = make(_TableSchema, 0)
+			}
+			dbSchema[col.tblName] = append(dbSchema[col.tblName], col)
+		}
+		return true
+	})
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-type rowVisitor func([]sql.RawBytes)
-
-func query(db *sql.DB, visitor rowVisitor, q string, params ...interface{}) error {
-	if rows, err := db.Query(q, params...); err != nil {
-		return err
-	} else {
-		defer rows.Close()
-
-		cols, err := rows.Columns()
-		if err != nil {
-			return err
-		}
-		vals := make([]sql.RawBytes, len(cols))
-		ints := make([]interface{}, len(cols))
-		for i := range ints {
-			ints[i] = &vals[i]
-		}
-		for rows.Next() {
-			if err := rows.Scan(ints...); err != nil {
-				return err
-			}
-			visitor(vals)
-		}
-	}
-	return nil
-}
-
-func asString(rb sql.RawBytes) string {
-	if len(rb) > 0 {
-		return string(rb)
-	}
-	return ""
-}
-
-func asInt(rb sql.RawBytes) int {
-	if len(rb) > 0 {
-		ans, _ := strconv.Atoi(string(rb))
-		return ans
-	}
-	return 0
 }
