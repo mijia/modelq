@@ -17,7 +17,7 @@ func main() {
 	var touchTimestamp bool
 	var pCount int
 	flag.StringVar(&targetDb, "db", "", "Target database source string: e.g. root@tcp(127.0.0.1:3306)/test?charset=utf-8")
-	flag.StringVar(&tableNames, "tables", "", "You may specify which tables the models need to be created")
+	flag.StringVar(&tableNames, "tables", "", "You may specify which tables the models need to be created, e.g. \"user,article,blog\"")
 	flag.StringVar(&packageName, "pkg", "", "Go source code package for generated models")
 	flag.BoolVar(&touchTimestamp, "dont-touch-timestamp", false, "Should touch the datetime fields with default value or on update")
 	flag.IntVar(&pCount, "p", 4, "Parallell running for code generator")
@@ -91,11 +91,10 @@ type _DsnConfig struct {
 	dbname string
 }
 
+// Code taken from github.com/go-sql-driver/mysql
 func parseDsn(dsn string) (cfg *_DsnConfig, err error) {
 	// New config with some default values
-	cfg = &_DsnConfig{
-		dsn: dsn,
-	}
+	cfg = &_DsnConfig{dsn: dsn}
 
 	// TODO: use strings.IndexByte when we can depend on Go 1.2
 
@@ -177,35 +176,4 @@ func parseDsn(dsn string) (cfg *_DsnConfig, err error) {
 	}
 
 	return
-}
-
-func toCapitalCase(name string) string {
-	// cp___hello_12jiu -> CpHello12Jiu
-	data := []byte(name)
-	segStart := true
-	endPos := 0
-	for i := 0; i < len(data); i++ {
-		ch := data[i]
-		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
-			if segStart {
-				if ch >= 'a' && ch <= 'z' {
-					ch = ch - 'a' + 'A'
-				}
-				segStart = false
-			} else {
-				if ch >= 'A' && ch <= 'Z' {
-					ch = ch - 'A' + 'a'
-				}
-			}
-			data[endPos] = ch
-			endPos++
-		} else if ch >= '0' && ch <= '9' {
-			data[endPos] = ch
-			endPos++
-			segStart = true
-		} else {
-			segStart = true
-		}
-	}
-	return string(data[:endPos])
 }
