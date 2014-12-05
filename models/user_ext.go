@@ -53,10 +53,10 @@ func (user *User) String() string {
 
 func (user *User) _Q(method _Method, fields []string, where string) _QMonad {
 	return _QMonad{
-		model: user,
+		model:  user,
 		method: method,
 		fields: fields,
-		where: where,
+		where:  where,
 	}
 }
 
@@ -66,14 +66,14 @@ func (user *User) Get(db *sql.DB, id int64) (err error) {
 		user.updateFieldsByRawBytes(user.ModelFields(), rb)
 		return true
 	}
-	return q.QueryOne(db, id)
+	return q.queryOne(db, id)
 }
 
 func (user *User) Insert(db *sql.DB, updateSelf bool) error {
 	// Omit the `id` since it is auto_increment
 	// Omit the create_time, update_time since it is DATETIME field and has a default CURRENT_TIMESTAMP
 	q := user._Q(Insert, []string{"Name", "Password"}, "")
-	result, err := q.Exec(db, user.Name, user.Password)
+	result, err := q.exec(db, user.Name, user.Password)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (user *User) Insert(db *sql.DB, updateSelf bool) error {
 
 func (user *User) Update(db *sql.DB, updateSelf bool) (int64, error) {
 	q := user._Q(Update, []string{"Name", "Password", "CreateTime"}, "Id = ?")
-	result, err := q.Exec(db, user.Name, user.Password, user.CreateTime, user.Id)
+	result, err := q.exec(db, user.Name, user.Password, user.CreateTime, user.Id)
 	if err != nil {
 		return 0, err
 	}
@@ -104,7 +104,7 @@ func (user *User) Update(db *sql.DB, updateSelf bool) (int64, error) {
 
 func (user *User) Delete(db *sql.DB) (int64, error) {
 	q := user._Q(Delete, []string{}, "Id = ?")
-	if result, err := q.Exec(db, user.Id); err != nil {
+	if result, err := q.exec(db, user.Id); err != nil {
 		return 0, err
 	} else {
 		return result.RowsAffected()

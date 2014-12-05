@@ -42,7 +42,7 @@ type _QMonad struct {
 	rowVisitor _RowVisitorFunc
 }
 
-func (q _QMonad) Exec(db *sql.DB, params ...interface{}) (sql.Result, error) {
+func (q _QMonad) exec(db *sql.DB, params ...interface{}) (sql.Result, error) {
 	if query, err := q.genSql(); err != nil {
 		return nil, err
 	} else {
@@ -50,7 +50,7 @@ func (q _QMonad) Exec(db *sql.DB, params ...interface{}) (sql.Result, error) {
 	}
 }
 
-func (q _QMonad) QueryOne(db *sql.DB, params ...interface{}) error {
+func (q _QMonad) queryOne(db *sql.DB, params ...interface{}) error {
 	if query, err := q.genSql(); err != nil {
 		return err
 	} else {
@@ -72,7 +72,7 @@ func (q _QMonad) QueryOne(db *sql.DB, params ...interface{}) error {
 	}
 }
 
-func (q _QMonad) Query(db *sql.DB, params ...interface{}) error {
+func (q _QMonad) query(db *sql.DB, params ...interface{}) error {
 	if query, err := q.genSql(); err != nil {
 		return err
 	} else {
@@ -114,7 +114,7 @@ func (q _QMonad) genSql() (string, error) {
 	}
 
 	if whereClause, err := q.parseWhere(); err != nil {
-		return "", err			
+		return "", err
 	} else if whereClause != "" {
 		mainClause = fmt.Sprintf("%s %s", mainClause, whereClause)
 	}
