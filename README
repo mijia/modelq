@@ -4,7 +4,7 @@ Simple Idea:
 
 Just read schema from mysql databases, and Bang! Your go models are there. You can do the CRUD with the model, also the queries (yeah, the queries), but without the relation part like foreign keys, one-to-one or one-to-many.
 
-I am still stucking in the API design phase, so far it can work, but the code is not that beautiful. But so far you can run after go build (but the API part is not included yet):
+I am now stucking in the API design, it somehow can work, but the code is not that beautiful. You can run like this after go build (the API part is not included yet):
 
 $ ./modelq -db="root@/blog" -pkg=models -tables=user,article
 
