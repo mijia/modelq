@@ -3,8 +3,8 @@ package main
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/mijia/modelq/models"
 	"github.com/mijia/modelq/gmq"
+	"github.com/mijia/modelq/models"
 	"log"
 	"testing"
 )
@@ -37,10 +37,19 @@ func TestModelInstanceApi(t *testing.T) {
 	user.Password = "test12345"
 	user.Age = 15
 
-	if user, err = user.Insert(db); err != nil {
+	if user, err = user.Insert(db); err != nil || user.Id == 0 {
 		t.Errorf("Insert is not working, %s", err)
 	}
-	log.Println(user)
+
+	user.Age = 36
+	user.IsMarried = 1
+	if affected, err := user.Update(db); err != nil || affected == 0 {
+		t.Errorf("Update is not working, %s", err)
+	}
+
+	if affected, err := user.Delete(db); err != nil || affected == 0 {
+		t.Errorf("Delete is not working, %s", err)
+	}
 }
 
 func init() {

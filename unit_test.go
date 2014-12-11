@@ -1,9 +1,9 @@
 package main
 
 import (
-	"testing"
 	"github.com/mijia/modelq/gmq"
 	"log"
+	"testing"
 )
 
 func TestOptions(t *testing.T) {
@@ -44,7 +44,7 @@ func TestCapitalCase(t *testing.T) {
 func TestGmqFilters(t *testing.T) {
 	left := gmq.UnitFilter("id", "=", 1)
 	log.Println(left.SqlString("User"), left.Params())
-	
+
 	right := gmq.UnitFilter("name", "LIKE", "hello%")
 	log.Println(right.SqlString("User"), right.Params())
 

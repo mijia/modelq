@@ -7,6 +7,7 @@ import (
 
 var (
 	ErrNotSupportedCall = errors.New("Such api cannot be called on this query, e.g. SelectOne on an InsertQuery.")
+	ErrNotEnoughColumns = errors.New("Not enough columns data for Insert/Update.")
 )
 
 type WithinTxFunctor func(tx *sql.Tx) error
@@ -24,7 +25,7 @@ type Query interface {
 	Exec(db *sql.DB) (sql.Result, error)
 	// SelectOne(db *sql.DB) error
 	// SelectList(db *sql.DB) error
-	// Where(f Filter) Query
+	Where(f Filter) Query
 	// GroupBy(by string) Query
 	// OrderBy(by string) Query
 	// OrderByDesc(by string) Query
@@ -36,6 +37,19 @@ func Insert(model TableModel, columns []Column) Query {
 	q := _InsertQuery{}
 	q.model = model
 	q.columns = columns
+	return q
+}
+
+func Update(model TableModel, columns []Column) Query {
+	q := _UpdateQuery{}
+	q.model = model
+	q.columns = columns
+	return q
+}
+
+func Delete(model TableModel) Query {
+	q := _DeleteQuery{}
+	q.model = model
 	return q
 }
 

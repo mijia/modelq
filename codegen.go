@@ -125,28 +125,28 @@ func writeStruct(w *bufio.Writer, name string, schema _TableSchema) error {
 }
 
 var (
-	kFieldTypes map[string]string
+	kFieldTypes     map[string]string
 	kNullFieldTypes map[string]string
 )
 
 func init() {
 	kFieldTypes = map[string]string{
-		"bigint": "int64",
-		"int": "int",
-		"tinyint": "int",
-		"char": "string",
-		"varchar": "string",
+		"bigint":   "int64",
+		"int":      "int",
+		"tinyint":  "int",
+		"char":     "string",
+		"varchar":  "string",
 		"datetime": "time.Time",
-		"decimal": "float64",
+		"decimal":  "float64",
 	}
 	kNullFieldTypes = map[string]string{
-		"bigint": "gmq.OptionInt64",
-		"int": "gmq.OptionInt",
-		"tinyint": "gmq.OptionInt",
-		"char": "gmq.OptionString",
-		"varchar": "gmq.OptionString",
+		"bigint":   "gmq.OptionInt64",
+		"int":      "gmq.OptionInt",
+		"tinyint":  "gmq.OptionInt",
+		"char":     "gmq.OptionString",
+		"varchar":  "gmq.OptionString",
 		"datetime": "gmq.OptionTime",
-		"decimal": "gmq.OptionFloat64",
+		"decimal":  "gmq.OptionFloat64",
 	}
 }
 
