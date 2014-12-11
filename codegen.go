@@ -78,6 +78,8 @@ package %s
 
 import (
 	"time"
+	"github.com/mijia/modelq/gmq"
+	"database/sql"
 )`
 	data := fmt.Sprintf(tmpl, time.Now().Format("2006-01-02 15:04"), tName, dbName, tName, pName)
 	_, err := w.WriteString(data + "\n\n")
@@ -87,6 +89,8 @@ import (
 func writeCodeFooter(w *bufio.Writer) error {
 	tmpl := `// just to bypass the golang import check
 var _ = time.Now
+var _ sql.DB
+var _ gmq.OptionInt
 `
 	_, err := w.WriteString(tmpl + "\n\n")
 	return err
@@ -94,11 +98,15 @@ var _ = time.Now
 
 func writeStruct(w *bufio.Writer, name string, schema _TableSchema) error {
 	typeName := toCapitalCase(name)
-	fieldTmpl := "\t%s %s `json:\"%s\"%s`%s"
+	fieldTmpl := "\t%s %s `json:\"%s\"`%s"
 	fields := make([]string, len(schema))
 	for i, c := range schema {
 		name := toCapitalCase(c.colName)
-		fieldType, ok := kFieldTypes[strings.ToLower(c.dataType)]
+		fieldTypes := kFieldTypes
+		// if c.isNullable {
+		// 	fieldTypes = kNullFieldTypes
+		// }
+		fieldType, ok := fieldTypes[strings.ToLower(c.dataType)]
 		if !ok {
 			fieldType = "string"
 		}
@@ -106,7 +114,7 @@ func writeStruct(w *bufio.Writer, name string, schema _TableSchema) error {
 		if c.comment != "" {
 			comment = " // " + c.comment
 		}
-		fields[i] = fmt.Sprintf(fieldTmpl, name, fieldType, c.colName, tagForField(c), comment)
+		fields[i] = fmt.Sprintf(fieldTmpl, name, fieldType, c.colName, comment)
 	}
 	structTmpl := `type %s struct {
 %s
@@ -116,36 +124,30 @@ func writeStruct(w *bufio.Writer, name string, schema _TableSchema) error {
 	return err
 }
 
-func tagForField(col _Column) string {
-	tags := make([]string, 0)
-	if col.keyType != "" && col.keyType != "NULL" {
-		tags = append(tags, col.keyType)
-	}
-	if col.defaultValue != "" {
-		tags = append(tags, "DEFAULT "+col.defaultValue)
-	}
-	if col.extra != "" && col.extra != "NULL" {
-		tags = append(tags, col.extra)
-	}
-	if len(tags) > 0 {
-		return fmt.Sprintf(", modelq:\"%s\"", strings.Join(tags, ","))
-	}
-	return ""
-}
-
 var (
 	kFieldTypes map[string]string
+	kNullFieldTypes map[string]string
 )
 
 func init() {
-	kFieldTypes = make(map[string]string)
-	kFieldTypes["bigint"] = "int64"
-	kFieldTypes["int"] = "int"
-	kFieldTypes["tinyint"] = "int16"
-	kFieldTypes["char"] = "string"
-	kFieldTypes["varchar"] = "string"
-	kFieldTypes["datetime"] = "time.Time"
-	kFieldTypes["decimal"] = "float64"
+	kFieldTypes = map[string]string{
+		"bigint": "int64",
+		"int": "int",
+		"tinyint": "int",
+		"char": "string",
+		"varchar": "string",
+		"datetime": "time.Time",
+		"decimal": "float64",
+	}
+	kNullFieldTypes = map[string]string{
+		"bigint": "gmq.OptionInt64",
+		"int": "gmq.OptionInt",
+		"tinyint": "gmq.OptionInt",
+		"char": "gmq.OptionString",
+		"varchar": "gmq.OptionString",
+		"datetime": "gmq.OptionTime",
+		"decimal": "gmq.OptionFloat64",
+	}
 }
 
 func toCapitalCase(name string) string {

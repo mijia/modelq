@@ -3,117 +3,70 @@ package models
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"time"
+	"github.com/mijia/modelq/gmq"
 )
 
-func (user *User) updateFieldsByRawBytes(fields []string, rb []sql.RawBytes) {
-	for i := 0; i < len(fields) && i < len(rb); i++ {
-		switch fields[i] {
-		case "Id":
-			user.Id = asInt64(rb[i])
-		case "Name":
-			user.Name = asString(rb[i])
-		case "Password":
-			user.Password = asString(rb[i])
-		case "CreateTime":
-			user.CreateTime = asTime(rb[i])
-		case "UpdateTime":
-			user.UpdateTime = asTime(rb[i])
-		}
-	}
-}
-
-func (user *User) TableName() string {
-	return "user"
-}
-
-func (user *User) TableColumns() map[string]string {
-	return map[string]string{
-		"Id":         "id",
-		"Name":       "name",
-		"Password":   "password",
-		"CreateTime": "create_time",
-		"UpdateTime": "update_time",
-	}
-}
-
-func (user *User) ModelFields() []string {
-	return []string{"Id", "Name", "Password", "CreateTime", "UpdateTime"}
-}
-
-func (user *User) String() string {
-	if data, err := json.Marshal(user); err != nil {
-		return fmt.Sprintf("<User id=%d>", user.Id)
+func (u User) String() string {
+	if data, err := json.Marshal(u); err != nil {
+		return fmt.Sprintf("<User id=%d>", u.Id)
 	} else {
 		return string(data)
 	}
 }
 
-func (user *User) _Q(method _Method, fields []string, where string) _QMonad {
-	return _QMonad{
-		model:  user,
-		method: method,
-		fields: fields,
-		where:  where,
-	}
-}
-
-func (user *User) Get(db *sql.DB, id int64) (err error) {
-	q := user._Q(Select, user.ModelFields(), "Id = ?")
-	q.rowVisitor = func(rb []sql.RawBytes) bool {
-		user.updateFieldsByRawBytes(user.ModelFields(), rb)
-		return true
-	}
-	return q.queryOne(db, id)
-}
-
-func (user *User) Insert(db *sql.DB, updateSelf bool) error {
-	// Omit the `id` since it is auto_increment
-	// Omit the create_time, update_time since it is DATETIME field and has a default CURRENT_TIMESTAMP
-	q := user._Q(Insert, []string{"Name", "Password"}, "")
-	result, err := q.exec(db, user.Name, user.Password)
-	if err != nil {
-		return err
-	}
-	if updateSelf {
-		if lastId, err := result.LastInsertId(); err != nil {
-			return errors.New(fmt.Sprintf("Updated self failed with error, %s", err))
-		} else {
-			return user.Get(db, lastId)
-		}
-	}
-	return nil
-}
-
-func (user *User) Update(db *sql.DB, updateSelf bool) (int64, error) {
-	q := user._Q(Update, []string{"Name", "Password", "CreateTime"}, "Id = ?")
-	result, err := q.exec(db, user.Name, user.Password, user.CreateTime, user.Id)
-	if err != nil {
-		return 0, err
-	}
-	if updateSelf {
-		err := user.Get(db, user.Id)
-		if err != nil {
-			return 0, err
-		}
-	}
-	return result.RowsAffected()
-}
-
-func (user *User) Delete(db *sql.DB) (int64, error) {
-	q := user._Q(Delete, []string{}, "Id = ?")
-	if result, err := q.exec(db, user.Id); err != nil {
-		return 0, err
+func (u User) Insert(db *sql.DB) (User, error) {
+	if result, err := UserObjs.Insert(u).Exec(db); err != nil {
+		return u, err
 	} else {
-		return result.RowsAffected()
+		if id, err := result.LastInsertId(); err != nil {
+			return u, err
+		} else {
+			u.Id = id
+			return u, nil
+		} 
 	}
 }
 
-func NewUser() *User {
-	return &User{
-		CreateTime: time.Now(),
-		UpdateTime: time.Now(),
+type _UserQuery struct {
+	gmq.Query
+}
+
+type _UserObjs struct {}
+
+func (o _UserObjs) Names() (string, string) { return "user", "User" }
+
+func (o _UserObjs) Insert(u User) _UserQuery {
+	q := _UserQuery{}
+	q.Query = gmq.Insert(o, o.collectColumn(u, "Name", "Password", "IsMarried", "Age"))
+	return q
+}
+
+func (o _UserObjs) collectColumn(u User, fields ...string) []gmq.Column {
+	data := make([]gmq.Column, 0, len(fields))
+	for _, f := range fields {
+		switch f {
+		case "Id":
+			data = append(data, gmq.Column{"id", u.Id})
+		case "Name":
+			data = append(data, gmq.Column{"name", u.Name})
+		case "Password":
+			data = append(data, gmq.Column{"password", u.Password})
+		case "IsMarried":
+			data = append(data, gmq.Column{"is_married", u.IsMarried})
+		case "Age":
+			data = append(data, gmq.Column{"age", u.Age})
+		case "CreateTime":
+			data = append(data, gmq.Column{"create_time", u.CreateTime})
+		case "UpdateTime":
+			data = append(data, gmq.Column{"update_time", u.UpdateTime})
+		}
 	}
+	return data
+}
+
+var UserObjs _UserObjs
+
+func init() {
+	UserObjs = _UserObjs{}
 }
