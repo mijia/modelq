@@ -8,6 +8,14 @@ func dbQuote(name string) string {
 	return fmt.Sprintf("`%s`", name)
 }
 
+func tableNamewithAlias(name, alias string) string {
+	n := dbQuote(name)
+	if alias != "" {
+		n = fmt.Sprintf("%s AS %s", n, dbQuote(alias))
+	}
+	return n
+}
+
 func nameWithAlias(name, alias string) string {
 	n := dbQuote(name)
 	if alias != "" {

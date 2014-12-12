@@ -2,33 +2,81 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/mijia/modelq/gmq"
 	"github.com/mijia/modelq/models"
 	"log"
+	"math/rand"
 	"testing"
+	"time"
 )
 
 var db *sql.DB
 var _ = log.Println
 
-/*
-func TestModelBatchApi(t *testing.T) {
-	var err error
+func TestModelIterator(t *testing.T) {
 	objs := models.UserObjs
-	objs.Select().Filter(objs.FilterId("=", 1).And(objs.FilterName("LIKE", "jia%"))).One(db)
-	objs.Select().Filter(objs.FilterName("LIKE", "jia%")).OrderBy("CreateTime").Page(1, 20).List(db)
-	objs.Select("Id", "Name").Filter(objs.FilterName("LIKE", "jia%")).OrderByDesc("CreateTime").Page(1, 20).List(db)
-	objs.Select("Age").GroupBy("Age").List(db)
-	// also we should have an iterate api
-
-	models.WithinTx(func(tx *sql.Tx) error {
-		data := models.User{Age: 12, IsMarried: 0}
-		objs.Update(data, "Age", "IsMarried").Filter(objs.FilterAge("=", 11)).ExecWithinTx(tx)
-		objs.Delete().Filter(objs.FilterAge("=", 12)).ExecWithinTx(tx)
+	err := objs.Select().Where(objs.FilterAge(">=", 36)).OrderBy("-Age").
+		Iterate(db, func(u models.User) bool {
+		if u.Age < 40 {
+			fmt.Println(u.Name, u.Age)
+		}
+		return true
 	})
+	if err != nil {
+		t.Errorf("Iterateor is not working, %s", err)
+	}
 }
-*/
+
+func TestModelBatchApi(t *testing.T) {
+	rand.Seed(time.Now().UnixNano())
+	err := gmq.WithinTx(db, func(tx *sql.Tx) error {
+		for i := 0; i < 5; i++ {
+			user := models.User{}
+			user.Name = fmt.Sprintf("mijia_%d_%d", time.Now().UnixNano(), rand.Int63())
+			user.Password = "123456789"
+			user.Age = rand.Intn(120) + 1
+			if _, err := user.Insert(tx); err != nil {
+				t.Errorf("Failed to insert test data for batch query, %s", user)
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Errorf("Failed to insert test data in transaction, %s", err)
+	}
+
+	objs := models.UserObjs
+	query := objs.Select().Where(objs.FilterName("LIKE", "mijia%"))
+	if _, err := query.List(db); err != nil {
+		t.Errorf("Failed to list query, %s", err)
+	}
+
+	query = objs.Select("Id", "Age").Where(objs.FilterAge(">=", 10)).
+		OrderBy("Age", "+Id").Page(9, 5)
+	if _, err := query.List(db); err != nil {
+		t.Errorf("Failed to list query, %s", err)
+	}
+
+	query = objs.Select("Age", "Id").Where(objs.FilterAge("IN", 12, 13, 14)).
+		GroupBy("Age")
+	if _, err := query.List(db); err != nil {
+		t.Errorf("Failed to list query, %s", err)
+	}
+
+	data := models.User{Age: 19, IsMarried: 1}
+	query = objs.Update(data, "Age", "IsMarried").Where(objs.FilterAge("=", data.Age-1))
+	if _, err := query.Run(db); err != nil {
+		t.Errorf("Failed to do batch update, %s", err)
+	}
+
+	query = objs.Delete().Where(objs.FilterAge(">", 70))
+	if _, err := query.Run(db); err != nil {
+		t.Errorf("Failed to do batch delete, %s", err)
+	}
+}
 
 func TestModelInstanceApi(t *testing.T) {
 	var err error
@@ -38,17 +86,28 @@ func TestModelInstanceApi(t *testing.T) {
 	user.Age = 15
 
 	if user, err = user.Insert(db); err != nil || user.Id == 0 {
-		t.Errorf("Insert is not working, %s", err)
+		t.Errorf("Insert is not working, %v", err)
+	}
+
+	userId := user.Id
+	objs := models.UserObjs
+	query := objs.Select().Where(objs.FilterId("=", userId))
+
+	if user, err = query.One(db); err != nil {
+		t.Errorf("Select one is not working, %v", err)
 	}
 
 	user.Age = 36
 	user.IsMarried = 1
 	if affected, err := user.Update(db); err != nil || affected == 0 {
-		t.Errorf("Update is not working, %s", err)
+		t.Errorf("Update is not working, %v", err)
+	}
+	if user, err = query.One(db); err != nil {
+		t.Errorf("Select one is not working, %v", err)
 	}
 
 	if affected, err := user.Delete(db); err != nil || affected == 0 {
-		t.Errorf("Delete is not working, %s", err)
+		t.Errorf("Delete is not working, %v", err)
 	}
 }
 
@@ -59,5 +118,7 @@ func init() {
 		panic(err)
 	}
 
-	gmq.Debug = true
+	gmq.Debug = false
 }
+
+var _ = fmt.Println
