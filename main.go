@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/mijia/modelq/gmq"
+	"github.com/mijia/modelq/meta"
 	"log"
 	"os/exec"
 	"runtime"
@@ -46,6 +49,7 @@ func main() {
 		return
 	}
 
+	cfg.dsn = replaceDbName(cfg.dsn, cfg.dbname, "information_schema")
 	dbSchema, err := loadTablesMeta(cfg, tableNames)
 	if err != nil {
 		log.Println("Cannot load table schemas from db.")
@@ -76,6 +80,55 @@ func printUsages(message ...interface{}) {
 	flag.PrintDefaults()
 }
 
+type TableSchema []meta.Columns
+type DbSchema map[string]TableSchema
+
+func loadTablesMeta(cfg *_DsnConfig, tableNames string) (DbSchema, error) {
+	tables := strings.Split(tableNames, ",")
+	log.Printf("Start to load tables schema from db, %s, tables=%s", cfg.dbname, tables)
+	db, err := sql.Open("mysql", cfg.dsn)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+
+	dbSchema := make(DbSchema)
+	if len(tableNames) == 0 {
+		err = queryColumns(db, cfg.dbname, nil, dbSchema)
+	} else {
+		err = queryColumns(db, cfg.dbname, tables, dbSchema)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("Loaded schema data of %d table(s) from db[%s]", len(dbSchema), cfg.dbname)
+	return dbSchema, nil
+}
+
+func queryColumns(db *sql.DB, dbName string, tables []string, dbSchema DbSchema) error {
+	objs := meta.ColumnsObjs
+	filter := objs.FilterTableSchema("=", dbName)
+	if len(tables) > 0 {
+		filter = filter.And(objs.FilterTableName("IN", tables[0], tables[1:]...))
+	}
+
+	query := objs.Select().Where(filter).OrderBy("TableName", "OrdinalPosition")
+	err := query.Iterate(db, func(col meta.Columns) bool {
+		if _, ok := dbSchema[col.TableName]; !ok {
+			dbSchema[col.TableName] = make(TableSchema, 0)
+		}
+		dbSchema[col.TableName] = append(dbSchema[col.TableName], col)
+		return true
+	})
+	return err
+}
+
 var (
 	errInvalidDSNUnescaped = errors.New("Invalid DSN: Did you forget to escape a param value?")
 	errInvalidDSNAddr      = errors.New("Invalid DSN: Network Address not terminated (missing closing brace)")
@@ -91,12 +144,14 @@ type _DsnConfig struct {
 	dbname string
 }
 
+func replaceDbName(dsn string, oldName, newName string) string {
+	return strings.Replace(dsn, "/"+oldName, "/"+newName, 1)
+}
+
 // Code taken from github.com/go-sql-driver/mysql
 func parseDsn(dsn string) (cfg *_DsnConfig, err error) {
 	// New config with some default values
 	cfg = &_DsnConfig{dsn: dsn}
-
-	// TODO: use strings.IndexByte when we can depend on Go 1.2
 
 	// [user[:password]@][net[(addr)]]/dbname[?param1=value1&paramN=valueN]
 	// Find the last '/' (since the password or the net addr might contain a '/')
@@ -176,4 +231,9 @@ func parseDsn(dsn string) (cfg *_DsnConfig, err error) {
 	}
 
 	return
+}
+
+func init() {
+	// log.SetFlags(log.LstdFlags | log.Lshortfile)
+	gmq.Debug = false
 }

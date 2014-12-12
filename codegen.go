@@ -71,11 +71,11 @@ func generateModel(dbName, tName string, schema TableSchema, config CodeConfig) 
 			ColumnName:      col.ColumnName,
 			Type:            getFieldType(col.DataType),
 			JsonMeta:        fmt.Sprintf("`json:\"%s\"`", col.ColumnName),
-			IsPrimaryKey:    strings.ToUpper(col.KeyType) == "PRI",
+			IsPrimaryKey:    strings.ToUpper(col.ColumnKey) == "PRI",
 			IsAutoIncrement: strings.ToUpper(col.Extra) == "AUTO_INCREMENT",
-			DefaultValue:    col.DefaultValue,
+			DefaultValue:    col.ColumnDefault,
 			Extra:           col.Extra,
-			Comment:         col.Comment,
+			Comment:         col.ColumnComment,
 		}
 		if field.Type == "time.Time" {
 			needTime = true
