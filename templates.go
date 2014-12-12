@@ -57,7 +57,7 @@ func (obj {{.Name}}) Update(dbtx gmq.DbTx) (int64, error) {
 		return 0, err
 	} else {
 		return result.RowsAffected()
-	}{{else}}return 0, ErrNoPrimaryKeyDefined{{end}}
+	}{{else}}return 0, gmq.ErrNoPrimaryKeyDefined{{end}}
 }
 
 func (obj {{.Name}}) Delete(dbtx gmq.DbTx) (int64, error) {
@@ -66,7 +66,7 @@ func (obj {{.Name}}) Delete(dbtx gmq.DbTx) (int64, error) {
 		return 0, err
 	} else {
 		return result.RowsAffected()
-	}{{else}}return 0, ErrNoPrimaryKeyDefined{{end}}
+	}{{else}}return 0, gmq.ErrNoPrimaryKeyDefined{{end}}
 }
 `
 
