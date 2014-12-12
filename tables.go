@@ -10,31 +10,31 @@ import (
 
 var _ = fmt.Println
 
-type _Column struct {
-	tblName      string
-	colName      string
-	position     int
-	defaultValue string
-	isNullable   bool
-	dataType     string
-	keyType      string
-	extra        string
-	comment      string
+type Column struct {
+	TableName    string
+	ColumnName   string
+	Position     int
+	DefaultValue string
+	IsNullable   bool
+	DataType     string
+	KeyType      string
+	Extra        string
+	Comment      string
 }
 
-type _TableSchema []_Column
+type TableSchema []Column
 
-func (ts _TableSchema) Len() int { return len(ts) }
-func (ts _TableSchema) Swap(i, j int) {
+func (ts TableSchema) Len() int { return len(ts) }
+func (ts TableSchema) Swap(i, j int) {
 	ts[i], ts[j] = ts[j], ts[i]
 }
-func (ts _TableSchema) Less(i, j int) bool {
-	return ts[i].position < ts[j].position
+func (ts TableSchema) Less(i, j int) bool {
+	return ts[i].Position < ts[j].Position
 }
 
-type _DbSchema map[string]_TableSchema
+type DbSchema map[string]TableSchema
 
-func loadTablesMeta(cfg *_DsnConfig, tableNames string) (_DbSchema, error) {
+func loadTablesMeta(cfg *_DsnConfig, tableNames string) (DbSchema, error) {
 	tables := strings.Split(tableNames, ",")
 	log.Printf("Start to load tables schema from db, %s, tables=%s", cfg.dbname, tables)
 	db, err := sql.Open("mysql", cfg.dsn)
@@ -48,7 +48,7 @@ func loadTablesMeta(cfg *_DsnConfig, tableNames string) (_DbSchema, error) {
 		return nil, err
 	}
 
-	dbSchema := make(_DbSchema)
+	dbSchema := make(DbSchema)
 	if len(tables) == 0 {
 		err = queryColumns(db, cfg.dbname, "", dbSchema)
 		if err != nil {
@@ -71,7 +71,7 @@ func loadTablesMeta(cfg *_DsnConfig, tableNames string) (_DbSchema, error) {
 	return dbSchema, nil
 }
 
-func queryColumns(db *sql.DB, dbName string, table string, dbSchema _DbSchema) error {
+func queryColumns(db *sql.DB, dbName string, table string, dbSchema DbSchema) error {
 	kCols := 9
 	q := `
 		SELECT 
@@ -93,21 +93,21 @@ func queryColumns(db *sql.DB, dbName string, table string, dbSchema _DbSchema) e
 
 	err := dbQuery(db, q, params, func(r []sql.RawBytes) bool {
 		if len(r) == kCols {
-			col := _Column{
-				tblName:      asString(r[0]),
-				colName:      asString(r[1]),
-				position:     asInt(r[2]),
-				defaultValue: asString(r[3]),
-				isNullable:   asString(r[4]) == "YES",
-				dataType:     asString(r[5]),
-				keyType:      asString(r[6]),
-				extra:        asString(r[7]),
-				comment:      asString(r[8]),
+			col := Column{
+				TableName:    asString(r[0]),
+				ColumnName:   asString(r[1]),
+				Position:     asInt(r[2]),
+				DefaultValue: asString(r[3]),
+				IsNullable:   asString(r[4]) == "YES",
+				DataType:     asString(r[5]),
+				KeyType:      asString(r[6]),
+				Extra:        asString(r[7]),
+				Comment:      asString(r[8]),
 			}
-			if _, ok := dbSchema[col.tblName]; !ok {
-				dbSchema[col.tblName] = make(_TableSchema, 0)
+			if _, ok := dbSchema[col.TableName]; !ok {
+				dbSchema[col.TableName] = make(TableSchema, 0)
 			}
-			dbSchema[col.tblName] = append(dbSchema[col.tblName], col)
+			dbSchema[col.TableName] = append(dbSchema[col.TableName], col)
 		}
 		return true
 	})

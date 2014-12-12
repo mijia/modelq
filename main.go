@@ -52,7 +52,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	codeConfig := _CodeConfig{packageName, touchTimestamp}
+	codeConfig := CodeConfig{packageName, touchTimestamp}
 	generateModels(cfg.dbname, dbSchema, codeConfig)
 	formatCodes(packageName)
 }
@@ -60,7 +60,7 @@ func main() {
 func formatCodes(pkg string) {
 	log.Println("Running gofmt *.go")
 	var out bytes.Buffer
-	cmd := exec.Command("gofmt", "-w", pkg)
+	cmd := exec.Command("gofmt", "-w", "-s", pkg)
 	cmd.Stderr = &out
 	if err := cmd.Run(); err != nil {
 		log.Println(out.String())

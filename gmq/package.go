@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	ErrNoPrimaryKeyDefined = errors.New("Cannot call this, because there is no primary key defined for the model.")
 	ErrNotSupportedCall    = errors.New("Such api cannot be called on this query, e.g. SelectOne on an InsertQuery.")
 	ErrNotEnoughColumns    = errors.New("Not enough columns data for Insert/Update.")
 	ErrMultipleRowReturned = errors.New("Multiple row returned, but suppose there is only one row.")
