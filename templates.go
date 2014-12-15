@@ -43,7 +43,7 @@ func (obj {{.Name}}) Insert(dbtx gmq.DbTx) ({{.Name}}, error) {
 		if id, err := result.LastInsertId(); err != nil {
 			return obj, err
 		} else {
-			obj.Id = id
+			obj.Id = {{if eq .PrimaryField.Type "int64"}}id{{else}}{{.PrimaryField.Type}}(id){{end}}
 			return obj, err
 		}
 	}{{else}}_, err := {{.Name}}Objs.Insert(obj).Run(dbtx)
