@@ -156,7 +156,7 @@ func (m ModelMeta) AllFields() string {
 func (m ModelMeta) InsertableFields() string {
 	fields := make([]string, 0, len(m.Fields))
 	for _, f := range m.Fields {
-		if f.IsPrimaryKey {
+		if f.IsPrimaryKey && f.IsAutoIncrement {
 			continue
 		}
 		if f.Type == "time.Time" && strings.ToUpper(f.DefaultValue) == "CURRENT_TIMESTAMP" && !m.config.touchTimestamp {

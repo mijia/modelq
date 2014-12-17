@@ -51,7 +51,7 @@ func (obj {{.Name}}) Insert(dbtx gmq.DbTx) ({{.Name}}, error) {
 }
 
 func (obj {{.Name}}) Update(dbtx gmq.DbTx) (int64, error) {
-	{{if .HasAutoIncrementPrimaryKey}}fields := []string{ {{.UpdatableFields}} }
+	{{if .PrimaryField}}fields := []string{ {{.UpdatableFields}} }
 	filter := {{.Name}}Objs.Filter{{.PrimaryField.Name}}("=", obj.{{.PrimaryField.Name}})
 	if result, err := {{.Name}}Objs.Update(obj, fields...).Where(filter).Run(dbtx); err != nil {
 		return 0, err
@@ -61,7 +61,7 @@ func (obj {{.Name}}) Update(dbtx gmq.DbTx) (int64, error) {
 }
 
 func (obj {{.Name}}) Delete(dbtx gmq.DbTx) (int64, error) {
-	{{if .HasAutoIncrementPrimaryKey}}filter := {{.Name}}Objs.Filter{{.PrimaryField.Name}}("=", obj.{{.PrimaryField.Name}})
+	{{if .PrimaryField}}filter := {{.Name}}Objs.Filter{{.PrimaryField.Name}}("=", obj.{{.PrimaryField.Name}})
 	if result, err := {{.Name}}Objs.Delete().Where(filter).Run(dbtx); err != nil {
 		return 0, err
 	} else {
