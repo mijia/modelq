@@ -20,7 +20,7 @@ import (
 `
 
 var modelStruct string = `type {{.Name}} struct {
-	{{range .Fields}}{{.Name}} {{.Type}} {{.JsonMeta}}
+	{{range .Fields}}{{.Name}} {{.Type}} {{.JsonMeta}}{{if .Comment}} // {{.Comment}}{{end}}
 	{{end}}
 }
 `
