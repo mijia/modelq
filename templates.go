@@ -11,6 +11,7 @@ package {{.PkgName}}
 
 import (
 	"encoding/json"
+	"encoding/gob"
 	"fmt"
 	"strings"
 	"github.com/mijia/modelq/gmq"
@@ -263,6 +264,7 @@ func init() {
 	{{.Name}}Objs.fcMap = map[string]string{
 		{{range .Fields}}"{{.Name}}": "{{.ColumnName}}",
 		{{end}} }
+	gob.Register({{.Name}}{})
 }
 `
 
