@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"time"
 )
 
 type CodeResult struct {
@@ -184,7 +183,6 @@ func (m ModelMeta) UpdatableFields() string {
 
 func (m ModelMeta) GenHeader(w *bufio.Writer, importTime bool) error {
 	return tmHeader.Execute(w, map[string]interface{}{
-		"Timestamp":  time.Now().Format("2006-01-02 15:04"),
 		"DbName":     m.DbName,
 		"TableName":  m.TableName,
 		"PkgName":    m.config.packageName,
