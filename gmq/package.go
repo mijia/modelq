@@ -65,7 +65,7 @@ type Column struct {
 }
 
 type TableModel interface {
-	Names() (string, string)
+	Names() (schema, tbl, alias string)
 }
 
 type DbTx interface {

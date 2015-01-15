@@ -30,13 +30,13 @@ func LoadDatabaseSchema(driver, dsnString, schema, tableNames string) (dbSchema 
 	} else {
 		return driver.LoadDatabaseSchema(dsnString, schema, tableNames)
 	}
-
 }
 
 var drivers map[string]Driver
 
 func init() {
 	drivers = map[string]Driver{
-		"mysql": MysqlDriver{},
+		"mysql":    MysqlDriver{},
+		"postgres": PostgresDriver{},
 	}
 }

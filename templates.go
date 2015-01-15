@@ -160,7 +160,9 @@ type _{{.Name}}Objs struct {
 	fcMap map[string]string
 }
 
-func (o _{{.Name}}Objs) Names() (string, string) { return "{{.TableName}}", "{{.Name}}" }
+func (o _{{.Name}}Objs) Names() (schema, tbl, alias string) { 
+	return "{{.DbName}}", "{{.TableName}}", "{{.Name}}" 
+}
 
 func (o _{{.Name}}Objs) Select(fields ...string) _{{.Name}}Query {
 	q := _{{.Name}}Query{}

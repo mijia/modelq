@@ -8,9 +8,8 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/mijia/modelq/gmq"
+	"strings"
 )
 
 type Columns struct {
@@ -145,7 +144,9 @@ type _ColumnsObjs struct {
 	fcMap map[string]string
 }
 
-func (o _ColumnsObjs) Names() (string, string) { return "COLUMNS", "Columns" }
+func (o _ColumnsObjs) Names() (schema, tbl, alias string) {
+	return "information_schema", "COLUMNS", "Columns"
+}
 
 func (o _ColumnsObjs) Select(fields ...string) _ColumnsQuery {
 	q := _ColumnsQuery{}

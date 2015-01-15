@@ -216,14 +216,16 @@ func (q _SelectQuery) SelectList(dbtx DbTx, functor QueryRowVisitor) error {
 }
 
 func (q _SelectQuery) sqlStringAndParam(driverName string) (string, []interface{}) {
-	table, alias := q.model.Names()
+	schema, table, alias := q.model.Names()
 	fields, params := q.columns.fieldsAndParams(alias, driverName)
-	query := fmt.Sprintf("SELECT %s FROM %s", strings.Join(fields, ", "), tableNamewithAlias(table, alias, driverName))
+	query := fmt.Sprintf("SELECT %s FROM %s",
+		strings.Join(fields, ", "),
+		tableNamewithAlias(schema, table, alias, driverName))
 	if remains, extras := q.sqlRemains(alias, driverName); remains != "" && len(extras) > 0 {
 		query = fmt.Sprintf("%s %s", query, remains)
 		params = append(params, extras...)
 	}
-	return query, params
+	return rebindSqlParams(query, driverName), params
 }
 
 func (q _SelectQuery) Explain(driverName string) string {
@@ -257,12 +259,13 @@ func (q _InsertQuery) Limit(offsets ...int64) Query { return q }
 func (q _InsertQuery) Page(number, size int) Query  { return q }
 
 func (q _InsertQuery) sqlStringAndParam(driverName string) (string, []interface{}) {
-	table, _ := q.model.Names()
+	schema, table, _ := q.model.Names()
 	fields, params := q.columns.fieldsAndParams("", driverName)
-	qMarks := genQMarks(len(q.columns))
+	marks := paramMarkers(len(q.columns), driverName)
 	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
-		dbQuote(table, driverName), strings.Join(fields, ", "), qMarks)
-	return query, params
+		tableNamewithAlias(schema, table, "", driverName),
+		strings.Join(fields, ", "), marks)
+	return rebindSqlParams(query, driverName), params
 }
 
 func (q _InsertQuery) String() string {
@@ -295,17 +298,19 @@ func (q _UpdateQuery) Limit(offsets ...int64) Query { return q }
 func (q _UpdateQuery) Page(number, size int) Query  { return q }
 
 func (q _UpdateQuery) sqlStringAndParam(driverName string) (string, []interface{}) {
-	table, _ := q.model.Names()
+	schema, table, _ := q.model.Names()
 	fields, params := q.columns.fieldsAndParams("", driverName)
 	for i, f := range fields {
 		fields[i] = fmt.Sprintf("%s = ?", f)
 	}
-	query := fmt.Sprintf("UPDATE %s SET %s", dbQuote(table, driverName), strings.Join(fields, ", "))
+	query := fmt.Sprintf("UPDATE %s SET %s",
+		tableNamewithAlias(schema, table, "", driverName),
+		strings.Join(fields, ", "))
 	if remains, extras := q.sqlRemains("", driverName); remains != "" && len(extras) > 0 {
 		query = fmt.Sprintf("%s %s", query, remains)
 		params = append(params, extras...)
 	}
-	return query, params
+	return rebindSqlParams(query, driverName), params
 }
 
 func (q _UpdateQuery) String() string {
@@ -335,14 +340,14 @@ func (q _DeleteQuery) Limit(offsets ...int64) Query { return q }
 func (q _DeleteQuery) Page(number, size int) Query  { return q }
 
 func (q _DeleteQuery) sqlStringAndParam(driverName string) (string, []interface{}) {
-	table, _ := q.model.Names()
-	query := fmt.Sprintf("DELETE FROM %s", dbQuote(table, driverName))
+	schema, table, _ := q.model.Names()
+	query := fmt.Sprintf("DELETE FROM %s", tableNamewithAlias(schema, table, "", driverName))
 	var params []interface{}
 	if remains, extras := q.sqlRemains("", driverName); remains != "" && len(extras) > 0 {
 		query = fmt.Sprintf("%s %s", query, remains)
 		params = extras
 	}
-	return query, params
+	return rebindSqlParams(query, driverName), params
 }
 
 func (q _DeleteQuery) String() string {
