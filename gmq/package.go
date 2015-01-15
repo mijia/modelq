@@ -15,7 +15,48 @@ var (
 	ErrNotDbTxObject       = errors.New("This is not a valid database/sql.Db or sql.Tx")
 )
 
-type WithinTxFunctor func(tx *sql.Tx) error
+type Db struct {
+	*sql.DB
+	driverName string
+}
+
+type Tx struct {
+	*sql.Tx
+	driverName string
+}
+
+func (tx *Tx) DriverName() string {
+	return tx.driverName
+}
+
+func (db *Db) DriverName() string {
+	return db.driverName
+}
+
+func (db *Db) Beginx() (*Tx, error) {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	return &Tx{Tx: tx, driverName: db.driverName}, err
+}
+
+func NewDb(db *sql.DB, driverName string) *Db {
+	return &Db{
+		DB:         db,
+		driverName: driverName,
+	}
+}
+
+func Open(driverName, dataSourceName string) (*Db, error) {
+	db, err := sql.Open(driverName, dataSourceName)
+	if err != nil {
+		return nil, err
+	}
+	return NewDb(db, driverName), err
+}
+
+type WithinTxFunctor func(tx *Tx) error
 type QueryRowVisitor func(columns []Column, rb []sql.RawBytes) bool
 
 type Column struct {
@@ -28,6 +69,7 @@ type TableModel interface {
 }
 
 type DbTx interface {
+	DriverName() string
 	Exec(query string, args ...interface{}) (sql.Result, error)
 	Prepare(query string) (*sql.Stmt, error)
 	Query(query string, args ...interface{}) (*sql.Rows, error)
@@ -72,8 +114,8 @@ func Delete(model TableModel) Query {
 	return q
 }
 
-func WithinTx(db *sql.DB, functor WithinTxFunctor) error {
-	if tx, err := db.Begin(); err != nil {
+func WithinTx(db *Db, functor WithinTxFunctor) error {
+	if tx, err := db.Beginx(); err != nil {
 		return err
 	} else {
 		err := functor(tx)

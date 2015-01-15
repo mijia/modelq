@@ -4,22 +4,25 @@ import (
 	"fmt"
 )
 
-func dbQuote(name string) string {
+func dbQuote(name string, driverName string) string {
+	if driverName == "postgres" {
+		return fmt.Sprintf("\"%s\"", name)
+	}
 	return fmt.Sprintf("`%s`", name)
 }
 
-func tableNamewithAlias(name, alias string) string {
-	n := dbQuote(name)
+func tableNamewithAlias(name, alias, driverName string) string {
+	n := dbQuote(name, driverName)
 	if alias != "" {
-		n = fmt.Sprintf("%s AS %s", n, dbQuote(alias))
+		n = fmt.Sprintf("%s AS %s", n, dbQuote(alias, driverName))
 	}
 	return n
 }
 
-func nameWithAlias(name, alias string) string {
-	n := dbQuote(name)
+func nameWithAlias(name, alias, driverName string) string {
+	n := dbQuote(name, driverName)
 	if alias != "" {
-		n = fmt.Sprintf("%s.%s", dbQuote(alias), n)
+		n = fmt.Sprintf("%s.%s", dbQuote(alias, driverName), n)
 	}
 	return n
 }

@@ -82,5 +82,5 @@ func printUsages(message ...interface{}) {
 
 func init() {
 	// log.SetFlags(log.LstdFlags | log.Lshortfile)
-	gmq.Debug = false
+	gmq.Debug = true
 }

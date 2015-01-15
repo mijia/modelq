@@ -1,18 +1,18 @@
 package drivers
 
 import (
-	"database/sql"
 	"log"
 	"strings"
 
 	"github.com/mijia/modelq/drivers/mysql"
+	"github.com/mijia/modelq/gmq"
 )
 
 type MysqlDriver struct{}
 
 func (m MysqlDriver) LoadDatabaseSchema(dsnString, schema, tableNames string) (DbSchema, error) {
 	log.Printf("[MySQL Driver] Start to load tables schema from db, %s, tables=%s", schema, tableNames)
-	db, err := sql.Open("mysql", m.useInformationSchema(dsnString, schema))
+	db, err := gmq.Open("mysql", m.useInformationSchema(dsnString, schema))
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (m MysqlDriver) dataType(colDataType string) string {
 	}
 }
 
-func (m MysqlDriver) queryColumns(db *sql.DB, dbName string, tables string, dbSchema DbSchema) error {
+func (m MysqlDriver) queryColumns(db *gmq.Db, dbName string, tables string, dbSchema DbSchema) error {
 	objs := mysql.ColumnsObjs
 	filter := objs.FilterTableSchema("=", dbName)
 	if len(tables) > 0 {

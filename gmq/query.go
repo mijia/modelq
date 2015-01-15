@@ -10,11 +10,11 @@ import (
 
 type _Columns []Column
 
-func (c _Columns) fieldsAndParams(alias string) ([]string, []interface{}) {
+func (c _Columns) fieldsAndParams(alias string, driverName string) ([]string, []interface{}) {
 	fields := make([]string, len(c))
 	params := make([]interface{}, 0, len(c))
 	for i, col := range c {
-		fields[i] = nameWithAlias(col.Name, alias)
+		fields[i] = nameWithAlias(col.Name, alias, driverName)
 		if col.Value != nil {
 			params = append(params, col.Value)
 		}
@@ -35,17 +35,17 @@ func (q _Query) Exec(dbtx DbTx) (sql.Result, error)                  { return ni
 func (q _Query) SelectOne(dbtx DbTx, functor QueryRowVisitor) error  { return ErrNotSupportedCall }
 func (q _Query) SelectList(dbtx DbTx, functor QueryRowVisitor) error { return ErrNotSupportedCall }
 
-func (q _Query) sqlRemains(alias string) (string, []interface{}) {
+func (q _Query) sqlRemains(alias string, driverName string) (string, []interface{}) {
 	statements := make([]string, 0)
 	params := make([]interface{}, 0)
 	if q.where != nil {
-		statements = append(statements, fmt.Sprintf("WHERE %s", q.where.SqlString(alias)))
+		statements = append(statements, fmt.Sprintf("WHERE %s", q.where.SqlString(alias, driverName)))
 		params = append(params, q.where.Params()...)
 	}
 	if q.groupBy != nil && len(q.groupBy) > 0 {
 		fields := make([]string, len(q.groupBy))
 		for i, gb := range q.groupBy {
-			fields[i] = nameWithAlias(gb, alias)
+			fields[i] = nameWithAlias(gb, alias, driverName)
 		}
 		groupBy := fmt.Sprintf("GROUP BY %s", strings.Join(fields, ", "))
 		statements = append(statements, groupBy)
@@ -61,11 +61,12 @@ func (q _Query) sqlRemains(alias string) (string, []interface{}) {
 			case '+':
 				ob = ob[1:]
 			}
-			fields[i] = nameWithAlias(ob, alias) + " " + sortDir
+			fields[i] = nameWithAlias(ob, alias, driverName) + " " + sortDir
 		}
 		orderBy := fmt.Sprintf("ORDER BY %s", strings.Join(fields, ", "))
 		statements = append(statements, orderBy)
 	}
+	// FIXME: different limit for different driver
 	if q.limit != nil && len(q.limit) == 2 {
 		statements = append(statements, "LIMIT ?, ?")
 		params = append(params, q.limit[0], q.limit[1])
@@ -138,7 +139,7 @@ func (q _Query) exec(dbtx DbTx, query string, params []interface{}) (sql.Result,
 	}()
 
 	var result sql.Result
-	runInTx := func(tx *sql.Tx) error {
+	runInTx := func(tx *Tx) error {
 		if stmt, txErr := tx.Prepare(query); txErr != nil {
 			return txErr
 		} else {
@@ -146,12 +147,12 @@ func (q _Query) exec(dbtx DbTx, query string, params []interface{}) (sql.Result,
 			return txErr
 		}
 	}
-	if db, ok := dbtx.(*sql.DB); ok {
-		err := WithinTx(db, func(tx *sql.Tx) error {
+	if db, ok := dbtx.(*Db); ok {
+		err := WithinTx(db, func(tx *Tx) error {
 			return runInTx(tx)
 		})
 		return result, err
-	} else if tx, ok := dbtx.(*sql.Tx); ok {
+	} else if tx, ok := dbtx.(*Tx); ok {
 		err := runInTx(tx)
 		return result, err
 	}
@@ -202,7 +203,7 @@ func (q _SelectQuery) SelectOne(dbtx DbTx, functor QueryRowVisitor) error {
 	if len(q.columns) == 0 {
 		return ErrNotEnoughColumns
 	}
-	query, params := q.sqlStringAndParam()
+	query, params := q.sqlStringAndParam(dbtx.DriverName())
 	return q.queryOne(dbtx, query, params, functor)
 }
 
@@ -210,23 +211,28 @@ func (q _SelectQuery) SelectList(dbtx DbTx, functor QueryRowVisitor) error {
 	if len(q.columns) == 0 {
 		return ErrNotEnoughColumns
 	}
-	query, params := q.sqlStringAndParam()
+	query, params := q.sqlStringAndParam(dbtx.DriverName())
 	return q.query(dbtx, query, params, functor)
 }
 
-func (q _SelectQuery) sqlStringAndParam() (string, []interface{}) {
+func (q _SelectQuery) sqlStringAndParam(driverName string) (string, []interface{}) {
 	table, alias := q.model.Names()
-	fields, params := q.columns.fieldsAndParams(alias)
-	query := fmt.Sprintf("SELECT %s FROM %s", strings.Join(fields, ", "), tableNamewithAlias(table, alias))
-	if remains, extras := q.sqlRemains(alias); remains != "" && len(extras) > 0 {
+	fields, params := q.columns.fieldsAndParams(alias, driverName)
+	query := fmt.Sprintf("SELECT %s FROM %s", strings.Join(fields, ", "), tableNamewithAlias(table, alias, driverName))
+	if remains, extras := q.sqlRemains(alias, driverName); remains != "" && len(extras) > 0 {
 		query = fmt.Sprintf("%s %s", query, remains)
 		params = append(params, extras...)
 	}
 	return query, params
 }
 
+func (q _SelectQuery) Explain(driverName string) string {
+	query, params := q.sqlStringAndParam(driverName)
+	return fmt.Sprintf("[%s], params=%v", query, params)
+}
+
 func (q _SelectQuery) String() string {
-	query, params := q.sqlStringAndParam()
+	query, params := q.sqlStringAndParam("mysql")
 	return fmt.Sprintf("[%s], params=%v", query, params)
 }
 
@@ -240,7 +246,7 @@ func (q _InsertQuery) Exec(dbtx DbTx) (sql.Result, error) {
 	if len(q.columns) == 0 {
 		return nil, ErrNotEnoughColumns
 	}
-	query, params := q.sqlStringAndParam()
+	query, params := q.sqlStringAndParam(dbtx.DriverName())
 	return q.exec(dbtx, query, params)
 }
 
@@ -250,16 +256,17 @@ func (q _InsertQuery) GroupBy(by ...string) Query   { return q }
 func (q _InsertQuery) Limit(offsets ...int64) Query { return q }
 func (q _InsertQuery) Page(number, size int) Query  { return q }
 
-func (q _InsertQuery) sqlStringAndParam() (string, []interface{}) {
+func (q _InsertQuery) sqlStringAndParam(driverName string) (string, []interface{}) {
 	table, _ := q.model.Names()
-	fields, params := q.columns.fieldsAndParams("")
+	fields, params := q.columns.fieldsAndParams("", driverName)
 	qMarks := genQMarks(len(q.columns))
-	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", dbQuote(table), strings.Join(fields, ", "), qMarks)
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+		dbQuote(table, driverName), strings.Join(fields, ", "), qMarks)
 	return query, params
 }
 
 func (q _InsertQuery) String() string {
-	query, params := q.sqlStringAndParam()
+	query, params := q.sqlStringAndParam("mysql")
 	return fmt.Sprintf("[%s], params=%v", query, params)
 }
 
@@ -273,7 +280,7 @@ func (q _UpdateQuery) Exec(dbtx DbTx) (sql.Result, error) {
 	if len(q.columns) == 0 {
 		return nil, ErrNotEnoughColumns
 	}
-	query, params := q.sqlStringAndParam()
+	query, params := q.sqlStringAndParam(dbtx.DriverName())
 	return q.exec(dbtx, query, params)
 }
 
@@ -287,14 +294,14 @@ func (q _UpdateQuery) GroupBy(by ...string) Query   { return q }
 func (q _UpdateQuery) Limit(offsets ...int64) Query { return q }
 func (q _UpdateQuery) Page(number, size int) Query  { return q }
 
-func (q _UpdateQuery) sqlStringAndParam() (string, []interface{}) {
+func (q _UpdateQuery) sqlStringAndParam(driverName string) (string, []interface{}) {
 	table, _ := q.model.Names()
-	fields, params := q.columns.fieldsAndParams("")
+	fields, params := q.columns.fieldsAndParams("", driverName)
 	for i, f := range fields {
 		fields[i] = fmt.Sprintf("%s = ?", f)
 	}
-	query := fmt.Sprintf("UPDATE %s SET %s", dbQuote(table), strings.Join(fields, ", "))
-	if remains, extras := q.sqlRemains(""); remains != "" && len(extras) > 0 {
+	query := fmt.Sprintf("UPDATE %s SET %s", dbQuote(table, driverName), strings.Join(fields, ", "))
+	if remains, extras := q.sqlRemains("", driverName); remains != "" && len(extras) > 0 {
 		query = fmt.Sprintf("%s %s", query, remains)
 		params = append(params, extras...)
 	}
@@ -302,7 +309,7 @@ func (q _UpdateQuery) sqlStringAndParam() (string, []interface{}) {
 }
 
 func (q _UpdateQuery) String() string {
-	query, params := q.sqlStringAndParam()
+	query, params := q.sqlStringAndParam("mysql")
 	return fmt.Sprintf("[%s], params=%v", query, params)
 }
 
@@ -313,7 +320,7 @@ type _DeleteQuery struct {
 }
 
 func (q _DeleteQuery) Exec(dbtx DbTx) (sql.Result, error) {
-	query, params := q.sqlStringAndParam()
+	query, params := q.sqlStringAndParam(dbtx.DriverName())
 	return q.exec(dbtx, query, params)
 }
 
@@ -327,11 +334,11 @@ func (q _DeleteQuery) GroupBy(by ...string) Query   { return q }
 func (q _DeleteQuery) Limit(offsets ...int64) Query { return q }
 func (q _DeleteQuery) Page(number, size int) Query  { return q }
 
-func (q _DeleteQuery) sqlStringAndParam() (string, []interface{}) {
+func (q _DeleteQuery) sqlStringAndParam(driverName string) (string, []interface{}) {
 	table, _ := q.model.Names()
-	query := fmt.Sprintf("DELETE FROM %s", dbQuote(table))
+	query := fmt.Sprintf("DELETE FROM %s", dbQuote(table, driverName))
 	var params []interface{}
-	if remains, extras := q.sqlRemains(""); remains != "" && len(extras) > 0 {
+	if remains, extras := q.sqlRemains("", driverName); remains != "" && len(extras) > 0 {
 		query = fmt.Sprintf("%s %s", query, remains)
 		params = extras
 	}
@@ -339,6 +346,6 @@ func (q _DeleteQuery) sqlStringAndParam() (string, []interface{}) {
 }
 
 func (q _DeleteQuery) String() string {
-	query, params := q.sqlStringAndParam()
+	query, params := q.sqlStringAndParam("mysql")
 	return fmt.Sprintf("[%s], params=%v", query, params)
 }
