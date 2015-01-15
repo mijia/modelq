@@ -8,6 +8,8 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	"github.com/mijia/modelq/drivers"
 )
 
 type CodeResult struct {
@@ -20,14 +22,14 @@ type CodeConfig struct {
 	touchTimestamp bool
 }
 
-func generateModels(dbName string, dbSchema DbSchema, config CodeConfig) {
+func generateModels(dbName string, dbSchema drivers.DbSchema, config CodeConfig) {
 	if fs, err := os.Stat(config.packageName); err != nil || !fs.IsDir() {
 		os.Mkdir(config.packageName, os.ModeDir|os.ModePerm)
 	}
 
 	jobs := make(chan CodeResult)
 	for tbl, cols := range dbSchema {
-		go func(tableName string, schema TableSchema) {
+		go func(tableName string, schema drivers.TableSchema) {
 			err := generateModel(dbName, tableName, schema, config)
 			jobs <- CodeResult{tableName, err}
 		}(tbl, cols)
@@ -44,7 +46,7 @@ func generateModels(dbName string, dbSchema DbSchema, config CodeConfig) {
 	close(jobs)
 }
 
-func generateModel(dbName, tName string, schema TableSchema, config CodeConfig) error {
+func generateModel(dbName, tName string, schema drivers.TableSchema, config CodeConfig) error {
 	file, err := os.Create(path.Join(config.packageName, tName+".go"))
 	if err != nil {
 		return err
@@ -68,13 +70,13 @@ func generateModel(dbName, tName string, schema TableSchema, config CodeConfig) 
 		field := ModelField{
 			Name:            toCapitalCase(col.ColumnName),
 			ColumnName:      col.ColumnName,
-			Type:            getFieldType(col.DataType),
+			Type:            col.DataType,
 			JsonMeta:        fmt.Sprintf("`json:\"%s\"`", col.ColumnName),
 			IsPrimaryKey:    strings.ToUpper(col.ColumnKey) == "PRI",
 			IsAutoIncrement: strings.ToUpper(col.Extra) == "AUTO_INCREMENT",
-			DefaultValue:    col.ColumnDefault,
+			DefaultValue:    col.DefaultValue,
 			Extra:           col.Extra,
-			Comment:         col.ColumnComment,
+			Comment:         col.Comment,
 		}
 		if field.Type == "time.Time" {
 			needTime = true
@@ -204,40 +206,6 @@ func (m ModelMeta) GenQueryApi(w *bufio.Writer) error {
 
 func (m ModelMeta) GenManagedObjApi(w *bufio.Writer) error {
 	return tmManagedObjApi.Execute(w, m)
-}
-
-func getFieldType(dataType string) string {
-	fieldType, ok := kFieldTypes[strings.ToLower(dataType)]
-	if !ok {
-		fieldType = "string"
-	}
-	return fieldType
-}
-
-var (
-	kFieldTypes     map[string]string
-	kNullFieldTypes map[string]string
-)
-
-func init() {
-	kFieldTypes = map[string]string{
-		"bigint":   "int64",
-		"int":      "int",
-		"tinyint":  "int",
-		"char":     "string",
-		"varchar":  "string",
-		"datetime": "time.Time",
-		"decimal":  "float64",
-	}
-	kNullFieldTypes = map[string]string{
-		"bigint":   "gmq.OptionInt64",
-		"int":      "gmq.OptionInt",
-		"tinyint":  "gmq.OptionInt",
-		"char":     "gmq.OptionString",
-		"varchar":  "gmq.OptionString",
-		"datetime": "gmq.OptionTime",
-		"decimal":  "gmq.OptionFloat64",
-	}
 }
 
 func toCapitalCase(name string) string {
