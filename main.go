@@ -6,13 +6,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/mijia/modelq/gmq"
-	"github.com/mijia/modelq/meta"
 	"log"
 	"os/exec"
 	"runtime"
 	"strings"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/mijia/modelq/gmq"
+	"github.com/mijia/modelq/meta"
 )
 
 func main() {
