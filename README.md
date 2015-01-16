@@ -60,6 +60,14 @@ users, err := objs.Select("Id", "Name", "Age").
 
 The `Age` of `User` model is a `int`, so go compiler will complain if a `string` is sent in like `objs.FilterAge(">", "15")`. ModelQ will generate all the filters for each field/column of each model then the type requirements would be in the func signatures.
 
+To support different drivers, modelq have to use `gmq.Open` and `gmq.Beginx` for `gmq.Db` and `gmq.Tx` objects, like
+
+```
+db, err := gmq.Open("postgres", "dbname=blog sslmode=disable")
+tx, err := db.Beginx()
+gmq.WithinTx(db, func(tx *gmq.Tx) error {...})
+```
+
 Can't do so far
 ---------------
 
