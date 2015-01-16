@@ -26,6 +26,7 @@ func main() {
 	flag.StringVar(&schemaName, "schema", "", "Schema for postgresql, database name for mysql")
 	flag.BoolVar(&touchTimestamp, "dont-touch-timestamp", false, "Should touch the datetime fields with default value or on update")
 	flag.IntVar(&pCount, "p", 4, "Parallell running for code generator")
+	flag.BoolVar(&gmq.Debug, "debug", false, "Debug on/off")
 	flag.Parse()
 
 	runtime.GOMAXPROCS(pCount)
@@ -54,7 +55,6 @@ func main() {
 		log.Println("Cannot load table schemas from database.")
 		log.Fatal(err)
 	}
-	fmt.Println(dbSchema)
 
 	codeConfig := CodeConfig{packageName, touchTimestamp}
 	generateModels(schemaName, dbSchema, codeConfig)
@@ -78,9 +78,4 @@ func printUsages(message ...interface{}) {
 	}
 	fmt.Println("\nUsage:")
 	flag.PrintDefaults()
-}
-
-func init() {
-	// log.SetFlags(log.LstdFlags | log.Lshortfile)
-	gmq.Debug = true
 }

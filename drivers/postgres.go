@@ -9,6 +9,7 @@ import (
 	"github.com/mijia/modelq/gmq"
 )
 
+type StringSet map[string]struct{}
 type PostgresDriver struct{}
 
 func (p PostgresDriver) LoadDatabaseSchema(dsnString, schema, tableNames string) (DbSchema, error) {
@@ -51,9 +52,51 @@ func (p PostgresDriver) dataType(dt string) string {
 	}
 }
 
+func (p PostgresDriver) queryPrimaryKeys(db *gmq.Db, dbName string, tables string) (StringSet, error) {
+	// FIXME: if we have implemented the JOIN
+	pKeys := make(StringSet)
+
+	tcObjs := postgres.TableConstraintsObjs
+	kcuObjs := postgres.KeyColumnUsageObjs
+	tcFilter := tcObjs.FilterTableSchema("=", dbName).And(tcObjs.FilterConstraintType("=", "PRIMARY KEY"))
+	kcuFilter := kcuObjs.FilterTableSchema("=", dbName)
+	if len(tables) > 0 {
+		tableVs := strings.Split(tables, ",")
+		tcFilter = tcFilter.And(tcObjs.FilterTableName("IN", tableVs[0], tableVs[1:]...))
+		kcuFilter = kcuFilter.And(kcuObjs.FilterTableName("IN", tableVs[0], tableVs[1:]...))
+	}
+
+	tcJoinKeys := make(StringSet)
+	err := tcObjs.Select().Where(tcFilter).Iterate(db, func(tc postgres.TableConstraints) bool {
+		key := fmt.Sprintf("%s.%s", tc.TableName, tc.ConstraintName)
+		tcJoinKeys[key] = struct{}{}
+		return true
+	})
+	if err != nil {
+		return pKeys, err
+	}
+
+	err = kcuObjs.Select().Where(kcuFilter).Iterate(db, func(kcu postgres.KeyColumnUsage) bool {
+		key := fmt.Sprintf("%s.%s", kcu.TableName, kcu.ConstraintName)
+		if _, ok := tcJoinKeys[key]; ok {
+			pkey := fmt.Sprintf("%s.%s", kcu.TableName, kcu.ColumnName)
+			pKeys[pkey] = struct{}{}
+		}
+		return true
+	})
+	if err != nil {
+		return pKeys, err
+	}
+
+	return pKeys, nil
+}
+
 func (p PostgresDriver) queryColumns(db *gmq.Db, dbName string, tables string, dbSchema DbSchema) error {
-	// 1. need to extract PRIMARY KEYS from information_schema.TABLE_CONSTRAINTS
-	// 2. find the columns/tables from information_schema.KEY_COLUMN_USAGE
+	pKeys, err := p.queryPrimaryKeys(db, dbName, tables)
+	if err != nil {
+		return err
+	}
+
 	objs := postgres.ColumnsObjs
 	filter := objs.FilterTableSchema("=", dbName)
 	if len(tables) > 0 {
@@ -70,16 +113,20 @@ func (p PostgresDriver) queryColumns(db *gmq.Db, dbName string, tables string, d
 		if strings.HasPrefix(col.ColumnDefault, "nextval(") {
 			extra = "AUTO_INCREMENT"
 		}
+		columnKey := fmt.Sprintf("%s.%s", col.TableName, col.ColumnName)
+		if _, ok := pKeys[columnKey]; ok {
+			columnKey = "PRI"
+		}
 		sCol := Column{
 			Schema:       col.TableSchema,
 			TableName:    col.TableName,
 			ColumnName:   col.ColumnName,
 			DefaultValue: col.ColumnDefault,
 			DataType:     p.dataType(col.DataType),
+			ColumnKey:    columnKey,
 			Extra:        extra,
 		}
 		dbSchema[col.TableName] = append(dbSchema[col.TableName], sCol)
-		fmt.Println(col)
 		return true
 	})
 }
