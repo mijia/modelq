@@ -6,7 +6,7 @@ import (
 )
 
 type Filter interface {
-	SqlString(alias string) string
+	SqlString(alias string, driverName string) string
 	Params() []interface{}
 	And(Filter) Filter
 	Or(Filter) Filter
@@ -46,8 +46,8 @@ type _UnitFilter struct {
 	param interface{}
 }
 
-func (f _UnitFilter) SqlString(alias string) string {
-	return fmt.Sprintf("%s %s ?", nameWithAlias(f.name, alias), f.op)
+func (f _UnitFilter) SqlString(alias, driverName string) string {
+	return fmt.Sprintf("%s %s ?", nameWithAlias(f.name, alias, driverName), f.op)
 }
 
 func (f _UnitFilter) Params() []interface{} {
@@ -56,19 +56,19 @@ func (f _UnitFilter) Params() []interface{} {
 
 func (f _UnitFilter) And(o Filter) Filter { return AndFilter(f, o) }
 func (f _UnitFilter) Or(o Filter) Filter  { return OrFilter(f, o) }
-func (f _UnitFilter) String() string      { return f.SqlString("") }
+func (f _UnitFilter) String() string      { return f.SqlString("", "mysql") }
 
 type _InFilter struct {
 	name   string
 	params []interface{}
 }
 
-func (f _InFilter) SqlString(alias string) string {
+func (f _InFilter) SqlString(alias, driverName string) string {
 	qMarks := make([]string, len(f.params))
 	for i := range f.params {
 		qMarks[i] = "?"
 	}
-	return fmt.Sprintf("%s IN (%s)", nameWithAlias(f.name, alias), strings.Join(qMarks, ", "))
+	return fmt.Sprintf("%s IN (%s)", nameWithAlias(f.name, alias, driverName), strings.Join(qMarks, ", "))
 }
 
 func (f _InFilter) Params() []interface{} {
@@ -77,16 +77,16 @@ func (f _InFilter) Params() []interface{} {
 
 func (f _InFilter) And(o Filter) Filter { return AndFilter(f, o) }
 func (f _InFilter) Or(o Filter) Filter  { return OrFilter(f, o) }
-func (f _InFilter) String() string      { return f.SqlString("") }
+func (f _InFilter) String() string      { return f.SqlString("", "mysql") }
 
 type _AndFilter struct {
 	fs []Filter
 }
 
-func (f _AndFilter) SqlString(alias string) string {
+func (f _AndFilter) SqlString(alias string, driverName string) string {
 	subs := make([]string, len(f.fs))
 	for i, sf := range f.fs {
-		subs[i] = sf.SqlString(alias)
+		subs[i] = sf.SqlString(alias, driverName)
 	}
 	return fmt.Sprintf("(%s)", strings.Join(subs, " AND "))
 }
@@ -101,16 +101,16 @@ func (f _AndFilter) Params() []interface{} {
 
 func (f _AndFilter) And(o Filter) Filter { return AndFilter(f, o) }
 func (f _AndFilter) Or(o Filter) Filter  { return OrFilter(f, o) }
-func (f _AndFilter) String() string      { return f.SqlString("") }
+func (f _AndFilter) String() string      { return f.SqlString("", "mysql") }
 
 type _OrFilter struct {
 	fs []Filter
 }
 
-func (f _OrFilter) SqlString(alias string) string {
+func (f _OrFilter) SqlString(alias string, driverName string) string {
 	subs := make([]string, len(f.fs))
 	for i, sf := range f.fs {
-		subs[i] = sf.SqlString(alias)
+		subs[i] = sf.SqlString(alias, driverName)
 	}
 	return fmt.Sprintf("(%s)", strings.Join(subs, " OR "))
 }
@@ -125,4 +125,4 @@ func (f _OrFilter) Params() []interface{} {
 
 func (f _OrFilter) And(o Filter) Filter { return AndFilter(f, o) }
 func (f _OrFilter) Or(o Filter) Filter  { return OrFilter(f, o) }
-func (f _OrFilter) String() string      { return f.SqlString("") }
+func (f _OrFilter) String() string      { return f.SqlString("", "mysql") }

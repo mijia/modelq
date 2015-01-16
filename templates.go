@@ -41,12 +41,15 @@ func (obj {{.Name}}) Insert(dbtx gmq.DbTx) ({{.Name}}, error) {
 	{{if .HasAutoIncrementPrimaryKey}}if result, err := {{.Name}}Objs.Insert(obj).Run(dbtx); err != nil {
 		return obj, err
 	}else {
-		if id, err := result.LastInsertId(); err != nil {
-			return obj, err
-		} else {
-			obj.Id = {{if eq .PrimaryField.Type "int64"}}id{{else}}{{.PrimaryField.Type}}(id){{end}}
-			return obj, err
+		if dbtx.DriverName() != "postgres" {
+			if id, err := result.LastInsertId(); err != nil {
+				return obj, err
+			} else {
+				obj.Id = {{if eq .PrimaryField.Type "int64"}}id{{else}}{{.PrimaryField.Type}}(id){{end}}
+				return obj, err
+			}
 		}
+		return obj, nil
 	}{{else}}_, err := {{.Name}}Objs.Insert(obj).Run(dbtx)
 	return obj, err{{end}}
 }
@@ -160,7 +163,9 @@ type _{{.Name}}Objs struct {
 	fcMap map[string]string
 }
 
-func (o _{{.Name}}Objs) Names() (string, string) { return "{{.TableName}}", "{{.Name}}" }
+func (o _{{.Name}}Objs) Names() (schema, tbl, alias string) { 
+	return "{{.DbName}}", "{{.TableName}}", "{{.Name}}" 
+}
 
 func (o _{{.Name}}Objs) Select(fields ...string) _{{.Name}}Query {
 	q := _{{.Name}}Query{}

@@ -1,19 +1,17 @@
-package main
+package examples
 
 import (
-	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/mijia/modelq/gmq"
-	"github.com/mijia/modelq/models"
-	"log"
 	"math/rand"
 	"testing"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+	models "github.com/mijia/modelq/examples/mysql"
+	"github.com/mijia/modelq/gmq"
 )
 
-var db *sql.DB
-var _ = log.Println
+var db *gmq.Db
 
 func TestModelIterator(t *testing.T) {
 	objs := models.UserObjs
@@ -31,7 +29,7 @@ func TestModelIterator(t *testing.T) {
 
 func TestModelBatchApi(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
-	err := gmq.WithinTx(db, func(tx *sql.Tx) error {
+	err := gmq.WithinTx(db, func(tx *gmq.Tx) error {
 		for i := 0; i < 5; i++ {
 			user := models.User{}
 			user.Name = fmt.Sprintf("mijia_%d_%d", time.Now().UnixNano(), rand.Int63())
@@ -113,12 +111,9 @@ func TestModelInstanceApi(t *testing.T) {
 
 func init() {
 	var err error
-	db, err = sql.Open("mysql", "root@/blog")
+	db, err = gmq.Open("mysql", "root@/blog")
 	if err != nil {
 		panic(err)
 	}
-
-	gmq.Debug = false
+	gmq.Debug = true
 }
-
-var _ = fmt.Println
