@@ -70,5 +70,6 @@ This is only a early rough implementation, missing a lot of things so far.
 * The generated models rely on the modelq/gmq package, I am not sure if this would be OK, or could this be changable and plugable, no idea so far.
 * No relations for complicated modeling (maybe will never consider this)
 * Only MySQL, PostgresQL supported
+* Seems github.com/lib/pq has problems to support time.Time scan
 
 But I just want to release it early and get the feedbacks early. So ideas and pull requests would be really welcomed and appreciated!
