@@ -128,6 +128,15 @@ func WithinTx(db *Db, functor WithinTxFunctor) error {
 	}
 }
 
+func AsBool(rb sql.RawBytes) bool {
+	if len(rb) > 0 {
+		if b, err := strconv.ParseBool(string(rb)); err == nil {
+			return b
+		}
+	}
+	return false
+}
+
 func AsString(rb sql.RawBytes) string {
 	if len(rb) > 0 {
 		return string(rb)

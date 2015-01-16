@@ -9,8 +9,6 @@ CREATE TABLE "user" (
     "password" VARCHAR(50) NOT NULL,
     "is_married" BOOLEAN DEFAULT NULL,
     "age" INT DEFAULT NULL,
-    "create_time" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "update_time" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY ("id"),
     UNIQUE ("name")
 );
@@ -24,8 +22,6 @@ CREATE TABLE "article" (
     "state" SMALLINT NOT NULL DEFAULT 0,  -- "0: published, 1: draft, 2: hidden",
     "content" TEXT DEFAULT NULL,
     "donation" DECIMAL(12, 2) DEFAULT 0.5,
-    "create_time" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "update_time" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY ("id"),
     FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE
 );

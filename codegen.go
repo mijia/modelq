@@ -125,6 +125,7 @@ func (f ModelField) ConverterFuncName() string {
 		"string":    "AsString",
 		"time.Time": "AsTime",
 		"float64":   "AsFloat64",
+		"bool":      "AsBool",
 	}
 	if c, ok := convertors[f.Type]; ok {
 		return c
@@ -160,7 +161,9 @@ func (m ModelMeta) InsertableFields() string {
 		if f.IsPrimaryKey && f.IsAutoIncrement {
 			continue
 		}
-		if f.Type == "time.Time" && strings.ToUpper(f.DefaultValue) == "CURRENT_TIMESTAMP" && !m.config.touchTimestamp {
+		autoTimestamp := strings.ToUpper(f.DefaultValue) == "CURRENT_TIMESTAMP" ||
+			strings.ToUpper(f.DefaultValue) == "NOW()"
+		if f.Type == "time.Time" && autoTimestamp && !m.config.touchTimestamp {
 			continue
 		}
 		fields = append(fields, fmt.Sprintf("\"%s\"", f.Name))

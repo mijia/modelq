@@ -68,8 +68,17 @@ func (q _Query) sqlRemains(alias string, driverName string) (string, []interface
 	}
 	// FIXME: different limit for different driver
 	if q.limit != nil && len(q.limit) == 2 {
-		statements = append(statements, "LIMIT ?, ?")
-		params = append(params, q.limit[0], q.limit[1])
+		if driverName == "postgres" {
+			statements = append(statements, "LIMIT ? OFFSET ?")
+			offset := q.limit[0]
+			if offset >= 1 {
+				offset--
+			}
+			params = append(params, q.limit[1], offset)
+		} else {
+			statements = append(statements, "LIMIT ?, ?")
+			params = append(params, q.limit[0], q.limit[1])
+		}
 	}
 	return strings.Join(statements, " "), params
 }
@@ -119,6 +128,7 @@ func (q _Query) query(dbtx DbTx, query string, params []interface{}, functor Que
 			}
 			for rows.Next() {
 				if err := rows.Scan(ints...); err != nil {
+					log.Println(err)
 					return err
 				}
 				if continued := functor(q.columns, vals); !continued {

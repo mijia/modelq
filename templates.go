@@ -41,12 +41,15 @@ func (obj {{.Name}}) Insert(dbtx gmq.DbTx) ({{.Name}}, error) {
 	{{if .HasAutoIncrementPrimaryKey}}if result, err := {{.Name}}Objs.Insert(obj).Run(dbtx); err != nil {
 		return obj, err
 	}else {
-		if id, err := result.LastInsertId(); err != nil {
-			return obj, err
-		} else {
-			obj.Id = {{if eq .PrimaryField.Type "int64"}}id{{else}}{{.PrimaryField.Type}}(id){{end}}
-			return obj, err
+		if dbtx.DriverName() != "postgres" {
+			if id, err := result.LastInsertId(); err != nil {
+				return obj, err
+			} else {
+				obj.Id = {{if eq .PrimaryField.Type "int64"}}id{{else}}{{.PrimaryField.Type}}(id){{end}}
+				return obj, err
+			}
 		}
+		return obj, nil
 	}{{else}}_, err := {{.Name}}Objs.Insert(obj).Run(dbtx)
 	return obj, err{{end}}
 }

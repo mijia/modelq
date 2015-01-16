@@ -1,35 +1,49 @@
 ModelQ
 ===============
 
-ModelQ is a code generator for creating Golang codes/models to access RDBMS database/tables (only MySQL supported for now).
+ModelQ is a code generator for creating Golang codes/models to access RDBMS database/tables (only MySQL/PostgresQL supported for now).
+
+Updates
+---------------
+
+1. PostgresQL supports included
+2. Have to use the gmq.Open to open a DB connection since it needs the driver name
 
 Simple Idea
 ---------------
 
-Read the schema from MySQL database (the whole database or only some tables), and Bang! The go models are there. I embrace the "SQL First" for modeling the business, then use the ModelQ to generate corresponding models for accessing. ModelQ is concerning about two aspects:
+Read the schema from MySQL/PostgresQL database (the whole database or only some tables), and Bang! The go models are there. I embrace the "SQL First" for modeling the business, then use the ModelQ to generate corresponding models for accessing. ModelQ is concerning about two aspects:
 
 1. Easy CRUD interface and query builder but without the golang reflection involved.
 2. Facilitate the Go compiler for the correctness (I think this is very important.)
 
-A simple example could be found under `./examples`, it is about a blog model contains Users and Articles. So the database can be set up using the examples/db.sql, then run
+A simple example could be found under `./examples`, it is about a blog model contains Users and Articles. So the database can be set up using the examples/blog.mysql.sql or examples/blog.pq.sql, then run
 
 ```
-$ modelq -db="root@/blog" -pkg=models -tables=user,article
+$ modelq -db="root@/blog" -pkg=mysql -tables=user,article -driver=mysql -schema=blog
 ```
 
-Then the models for User and Article would be generated in the directory of "./models".
+or
+
+```
+$ modelq -db="dbname=blog sslmode=disable" -pkg=postgres -tables=user,article -driver=postgres -schema=public
+```
+
+Then the models for User and Article would be generated in the directory of "./examples".
 
 CLI Usage
 ---------------
 ```
 -db="": Target database source string: e.g. root@tcp(127.0.0.1:3306)/test?charset=utf-8
 -dont-touch-timestamp=false: Should touch the datetime fields with default value or on update
+-driver="mysql": Current supported drivers include mysql, postgres
 -p=4: Parallell running for code generator
 -pkg="": Go source code package for generated models
+-schema="": Schema for postgresql, database name for mysql
 -tables="": You may specify which tables the models need to be created, e.g. "user,article,blog"
 ```
 
-I haven't tried the `go generate` from go 1.4 yet. Will definitely check it out.
+You can embed this CLI command in `go generate` tools
 
 API
 ---------------
@@ -55,6 +69,6 @@ This is only a early rough implementation, missing a lot of things so far.
 * Joins and Unions. Those seems very likely to the count/distinct/sum and etc. Complicated data structure may be needed.
 * The generated models rely on the modelq/gmq package, I am not sure if this would be OK, or could this be changable and plugable, no idea so far.
 * No relations for complicated modeling (maybe will never consider this)
-* Only MySQL supported
+* Only MySQL, PostgresQL supported
 
 But I just want to release it early and get the feedbacks early. So ideas and pull requests would be really welcomed and appreciated!
