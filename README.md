@@ -81,3 +81,7 @@ This is only a early rough implementation, missing a lot of things so far.
 * Seems github.com/lib/pq has problems to support time.Time scan
 
 But I just want to release it early and get the feedbacks early. So ideas and pull requests would be really welcomed and appreciated!
+
+License
+-----
+MIT
