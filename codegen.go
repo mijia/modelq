@@ -129,9 +129,8 @@ func (f ModelField) ConverterFuncName() string {
 	}
 	if c, ok := convertors[f.Type]; ok {
 		return c
-	} else {
-		return "AsString"
 	}
+	return "AsString"
 }
 
 type ModelMeta struct {
