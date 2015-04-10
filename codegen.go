@@ -88,19 +88,19 @@ func generateModel(dbName, tName string, schema drivers.TableSchema, config Code
 	}
 
 	if err := model.GenHeader(w, needTime); err != nil {
-		return errors.New(fmt.Sprintf("[%s] Fail to gen model header, %s", tName, err))
+		return fmt.Errorf("[%s] Fail to gen model header, %s", tName, err)
 	}
 	if err := model.GenStruct(w); err != nil {
-		return errors.New(fmt.Sprintf("[%s] Fail to gen model struct, %s", tName, err))
+		return fmt.Errorf("[%s] Fail to gen model struct, %s", tName, err)
 	}
 	if err := model.GenObjectApi(w); err != nil {
-		return errors.New(fmt.Sprintf("[%s] Fail to gen model object api, %s", tName, err))
+		return fmt.Errorf("[%s] Fail to gen model object api, %s", tName, err)
 	}
 	if err := model.GenQueryApi(w); err != nil {
-		return errors.New(fmt.Sprintf("[%s] Fail to gen model query api, %s", tName, err))
+		return fmt.Errorf("[%s] Fail to gen model query api, %s", tName, err)
 	}
 	if err := model.GenManagedObjApi(w); err != nil {
-		return errors.New(fmt.Sprintf("[%s] Fail to gen model managed objects api, %s", tName, err))
+		return fmt.Errorf("[%s] Fail to gen model managed objects api, %s", tName, err)
 	}
 
 	return nil
