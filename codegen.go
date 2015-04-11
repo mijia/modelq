@@ -19,6 +19,11 @@ type CodeResult struct {
 type CodeConfig struct {
 	packageName    string
 	touchTimestamp bool
+	template       string
+}
+
+func (cc *CodeConfig) MustCompileTemplate() {
+
 }
 
 func generateModels(dbName string, dbSchema drivers.DbSchema, config CodeConfig) {

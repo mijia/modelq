@@ -16,6 +16,7 @@ import (
 
 func main() {
 	var targetDb, tableNames, packageName string
+	var tmplName string
 	var driver, schemaName string
 	var touchTimestamp bool
 	var pCount int
@@ -25,6 +26,7 @@ func main() {
 	flag.StringVar(&driver, "driver", "mysql", "Current supported drivers include mysql, postgres")
 	flag.StringVar(&schemaName, "schema", "", "Schema for postgresql, database name for mysql")
 	flag.BoolVar(&touchTimestamp, "dont-touch-timestamp", false, "Should touch the datetime fields with default value or on update")
+	flag.StringVar(&tmplName, "template", "", "Passing the template to generate code, or use the default one")
 	flag.IntVar(&pCount, "p", 4, "Parallell running for code generator")
 	flag.BoolVar(&gmq.Debug, "debug", false, "Debug on/off")
 	flag.Parse()
@@ -56,8 +58,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	codeConfig := CodeConfig{packageName, touchTimestamp}
-	generateModels(schemaName, dbSchema, codeConfig)
+	codeConfig := &CodeConfig{
+		packageName:    packageName,
+		touchTimestamp: touchTimstamp,
+		template:       tmplName,
+	}
+	codeConfig.MustCompileTemplate()
+	generateModels(schemaName, dbSchema, *codeConfig)
 	formatCodes(packageName)
 }
 

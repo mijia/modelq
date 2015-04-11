@@ -37,12 +37,15 @@ func (obj User) Insert(dbtx gmq.DbTx) (User, error) {
 	if result, err := UserObjs.Insert(obj).Run(dbtx); err != nil {
 		return obj, err
 	} else {
-		if id, err := result.LastInsertId(); err != nil {
-			return obj, err
-		} else {
-			obj.Id = id
-			return obj, err
+		if dbtx.DriverName() != "postgres" {
+			if id, err := result.LastInsertId(); err != nil {
+				return obj, err
+			} else {
+				obj.Id = id
+				return obj, err
+			}
 		}
+		return obj, nil
 	}
 }
 
