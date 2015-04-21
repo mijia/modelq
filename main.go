@@ -60,7 +60,7 @@ func main() {
 
 	codeConfig := &CodeConfig{
 		packageName:    packageName,
-		touchTimestamp: touchTimstamp,
+		touchTimestamp: touchTimestamp,
 		template:       tmplName,
 	}
 	codeConfig.MustCompileTemplate()

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"text/template"
 
 	"github.com/mijia/modelq/drivers"
 )
@@ -22,11 +23,16 @@ type CodeConfig struct {
 	template       string
 }
 
-func (cc *CodeConfig) MustCompileTemplate() {
-
+func (cc CodeConfig) MustCompileTemplate() *template.Template {
+	if cc.template == "" {
+		return nil
+	}
+	return template.Must(template.ParseFiles(cc.template))
 }
 
 func generateModels(dbName string, dbSchema drivers.DbSchema, config CodeConfig) {
+	customTmpl := config.MustCompileTemplate()
+
 	if fs, err := os.Stat(config.packageName); err != nil || !fs.IsDir() {
 		os.Mkdir(config.packageName, os.ModeDir|os.ModePerm)
 	}
@@ -34,7 +40,7 @@ func generateModels(dbName string, dbSchema drivers.DbSchema, config CodeConfig)
 	jobs := make(chan CodeResult)
 	for tbl, cols := range dbSchema {
 		go func(tableName string, schema drivers.TableSchema) {
-			err := generateModel(dbName, tableName, schema, config)
+			err := generateModel(dbName, tableName, schema, config, customTmpl)
 			jobs <- CodeResult{tableName, err}
 		}(tbl, cols)
 	}
@@ -50,7 +56,7 @@ func generateModels(dbName string, dbSchema drivers.DbSchema, config CodeConfig)
 	close(jobs)
 }
 
-func generateModel(dbName, tName string, schema drivers.TableSchema, config CodeConfig) error {
+func generateModel(dbName, tName string, schema drivers.TableSchema, config CodeConfig, tmpl *template.Template) error {
 	file, err := os.Create(path.Join(config.packageName, tName+".go"))
 	if err != nil {
 		return err
@@ -91,19 +97,19 @@ func generateModel(dbName, tName string, schema drivers.TableSchema, config Code
 		model.Fields[i] = field
 	}
 
-	if err := model.GenHeader(w, needTime); err != nil {
+	if err := model.GenHeader(w, tmpl, needTime); err != nil {
 		return fmt.Errorf("[%s] Fail to gen model header, %s", tName, err)
 	}
-	if err := model.GenStruct(w); err != nil {
+	if err := model.GenStruct(w, tmpl); err != nil {
 		return fmt.Errorf("[%s] Fail to gen model struct, %s", tName, err)
 	}
-	if err := model.GenObjectApi(w); err != nil {
+	if err := model.GenObjectApi(w, tmpl); err != nil {
 		return fmt.Errorf("[%s] Fail to gen model object api, %s", tName, err)
 	}
-	if err := model.GenQueryApi(w); err != nil {
+	if err := model.GenQueryApi(w, tmpl); err != nil {
 		return fmt.Errorf("[%s] Fail to gen model query api, %s", tName, err)
 	}
-	if err := model.GenManagedObjApi(w); err != nil {
+	if err := model.GenManagedObjApi(w, tmpl); err != nil {
 		return fmt.Errorf("[%s] Fail to gen model managed objects api, %s", tName, err)
 	}
 
@@ -189,8 +195,17 @@ func (m ModelMeta) UpdatableFields() string {
 	return strings.Join(fields, ", ")
 }
 
-func (m ModelMeta) GenHeader(w *bufio.Writer, importTime bool) error {
-	return tmHeader.Execute(w, map[string]interface{}{
+func (m ModelMeta) getTemplate(tmpl *template.Template, name string, defaultTmpl *template.Template) *template.Template {
+	if tmpl != nil {
+		if definedTmpl := tmpl.Lookup(name); definedTmpl != nil {
+			return definedTmpl
+		}
+	}
+	return defaultTmpl
+}
+
+func (m ModelMeta) GenHeader(w *bufio.Writer, tmpl *template.Template, importTime bool) error {
+	return m.getTemplate(tmpl, "header", tmHeader).Execute(w, map[string]interface{}{
 		"DbName":     m.DbName,
 		"TableName":  m.TableName,
 		"PkgName":    m.config.packageName,
@@ -198,20 +213,20 @@ func (m ModelMeta) GenHeader(w *bufio.Writer, importTime bool) error {
 	})
 }
 
-func (m ModelMeta) GenStruct(w *bufio.Writer) error {
-	return tmStruct.Execute(w, m)
+func (m ModelMeta) GenStruct(w *bufio.Writer, tmpl *template.Template) error {
+	return m.getTemplate(tmpl, "struct", tmStruct).Execute(w, m)
 }
 
-func (m ModelMeta) GenObjectApi(w *bufio.Writer) error {
-	return tmObjApi.Execute(w, m)
+func (m ModelMeta) GenObjectApi(w *bufio.Writer, tmpl *template.Template) error {
+	return m.getTemplate(tmpl, "obj_api", tmObjApi).Execute(w, m)
 }
 
-func (m ModelMeta) GenQueryApi(w *bufio.Writer) error {
-	return tmQueryApi.Execute(w, m)
+func (m ModelMeta) GenQueryApi(w *bufio.Writer, tmpl *template.Template) error {
+	return m.getTemplate(tmpl, "query_api", tmQueryApi).Execute(w, m)
 }
 
-func (m ModelMeta) GenManagedObjApi(w *bufio.Writer) error {
-	return tmManagedObjApi.Execute(w, m)
+func (m ModelMeta) GenManagedObjApi(w *bufio.Writer, tmpl *template.Template) error {
+	return m.getTemplate(tmpl, "managed_api", tmManagedObjApi).Execute(w, m)
 }
 
 func toCapitalCase(name string) string {
