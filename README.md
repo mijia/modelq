@@ -6,8 +6,7 @@ ModelQ is a code generator for creating Golang codes/models to access RDBMS data
 Updates
 ---------------
 
-1. PostgresQL supports included
-2. Have to use the gmq.Open to open a DB connection since it needs the driver name
+1. Add the template support for generated codes, e.g. examples/custom.tmpl, you can define you own code segments for each part and don't need to define all of them, the generated code is listed in examples/custom/*.go
 
 Simple Idea
 ---------------
@@ -41,6 +40,7 @@ CLI Usage
 -pkg="": Go source code package for generated models
 -schema="": Schema for postgresql, database name for mysql
 -tables="": You may specify which tables the models need to be created, e.g. "user,article,blog"
+-template="": Passing the template to generate code, or use the default one
 ```
 
 You can embed this CLI command in `go generate` tools
