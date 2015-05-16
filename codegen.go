@@ -73,6 +73,7 @@ func generateModel(dbName, tName string, schema drivers.TableSchema, config Code
 		DbName:    dbName,
 		TableName: tName,
 		Fields:    make([]ModelField, len(schema)),
+		Uniques:   make([]ModelField, 0, len(schema)),
 		config:    config,
 	}
 	needTime := false
@@ -83,6 +84,7 @@ func generateModel(dbName, tName string, schema drivers.TableSchema, config Code
 			Type:            col.DataType,
 			JsonMeta:        fmt.Sprintf("`json:\"%s\"`", col.ColumnName),
 			IsPrimaryKey:    strings.ToUpper(col.ColumnKey) == "PRI",
+			IsUniqueKey:     strings.ToUpper(col.ColumnKey) == "UNI",
 			IsAutoIncrement: strings.ToUpper(col.Extra) == "AUTO_INCREMENT",
 			DefaultValue:    col.DefaultValue,
 			Extra:           col.Extra,
@@ -94,6 +96,11 @@ func generateModel(dbName, tName string, schema drivers.TableSchema, config Code
 		if field.IsPrimaryKey {
 			model.PrimaryField = &field
 		}
+		
+		if field.IsUniqueKey {
+		  model.Uniques = append(model.Uniques, field)
+		}
+		
 		model.Fields[i] = field
 	}
 
@@ -122,6 +129,7 @@ type ModelField struct {
 	Type            string
 	JsonMeta        string
 	IsPrimaryKey    bool
+	IsUniqueKey     bool
 	IsAutoIncrement bool
 	DefaultValue    string
 	Extra           string
@@ -149,6 +157,7 @@ type ModelMeta struct {
 	TableName    string
 	PrimaryField *ModelField
 	Fields       []ModelField
+	Uniques      []ModelField
 	config       CodeConfig
 }
 
