@@ -104,6 +104,26 @@ func TestModelInstanceApi(t *testing.T) {
 		t.Errorf("Select one is not working, %v", err)
 	}
 
+	article := models.Article{
+		UserId: user.Id,
+		Title:  "Hello World",
+	}
+	if article, err = article.Insert(db); err != nil || article.Id == 0 {
+		t.Errorf("Insert is not working for article, %v", err)
+	}
+
+	comment := models.Comment{
+		UserId:    user.Id,
+		ArticleId: article.Id,
+	}
+	if comment, err = comment.Insert(db); err != nil {
+		t.Errorf("Fail to insert a comment, %v", err)
+	}
+	comment.Content = "Woow"
+	if affected, err := comment.Update(db); err != nil || affected == 0 {
+		t.Errorf("Fail to update a comment, %s", err)
+	}
+
 	if affected, err := user.Delete(db); err != nil || affected == 0 {
 		t.Errorf("Delete is not working, %v", err)
 	}

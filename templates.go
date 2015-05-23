@@ -31,7 +31,7 @@ var objApi string = `
 
 func (obj {{.Name}}) String() string {
 	if data, err := json.Marshal(obj); err != nil {
-		{{if .PrimaryField}}return fmt.Sprintf("<{{.Name}} {{.PrimaryField.Name}}=%d>", obj.{{.PrimaryField.Name}}){{else}}return fmt.Sprintf("<{{.Name}}>"){{end}}
+		{{if .PrimaryFields}}return fmt.Sprintf({{ call .PrimaryFields.FormatObject .Name }}){{else}}return "<{{.Name}}>"{{end}}
 	} else {
 		return string(data)
 	}
@@ -45,7 +45,7 @@ func (obj {{.Name}}) Insert(dbtx gmq.DbTx) ({{.Name}}, error) {
 			if id, err := result.LastInsertId(); err != nil {
 				return obj, err
 			} else {
-				obj.Id = {{if eq .PrimaryField.Type "int64"}}id{{else}}{{.PrimaryField.Type}}(id){{end}}
+				{{ call .PrimaryFields.FormatIncrementId }}
 				return obj, err
 			}
 		}
@@ -55,8 +55,8 @@ func (obj {{.Name}}) Insert(dbtx gmq.DbTx) ({{.Name}}, error) {
 }
 
 func (obj {{.Name}}) Update(dbtx gmq.DbTx) (int64, error) {
-	{{if .PrimaryField}}fields := []string{ {{.UpdatableFields}} }
-	filter := {{.Name}}Objs.Filter{{.PrimaryField.Name}}("=", obj.{{.PrimaryField.Name}})
+	{{if .PrimaryFields}}fields := []string{ {{.UpdatableFields}} }
+	{{ call .PrimaryFields.FormatFilters .Name }}
 	if result, err := {{.Name}}Objs.Update(obj, fields...).Where(filter).Run(dbtx); err != nil {
 		return 0, err
 	} else {
@@ -65,7 +65,7 @@ func (obj {{.Name}}) Update(dbtx gmq.DbTx) (int64, error) {
 }
 
 func (obj {{.Name}}) Delete(dbtx gmq.DbTx) (int64, error) {
-	{{if .PrimaryField}}filter := {{.Name}}Objs.Filter{{.PrimaryField.Name}}("=", obj.{{.PrimaryField.Name}})
+	{{if .PrimaryFields}}{{ call .PrimaryFields.FormatFilters .Name }}
 	if result, err := {{.Name}}Objs.Delete().Where(filter).Run(dbtx); err != nil {
 		return 0, err
 	} else {

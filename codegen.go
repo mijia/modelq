@@ -94,13 +94,13 @@ func generateModel(dbName, tName string, schema drivers.TableSchema, config Code
 			needTime = true
 		}
 		if field.IsPrimaryKey {
-			model.PrimaryField = &field
+			model.PrimaryFields = append(model.PrimaryFields, &field)
 		}
-		
+
 		if field.IsUniqueKey {
-		  model.Uniques = append(model.Uniques, field)
+			model.Uniques = append(model.Uniques, field)
 		}
-		
+
 		model.Fields[i] = field
 	}
 
@@ -151,18 +151,72 @@ func (f ModelField) ConverterFuncName() string {
 	return "AsString"
 }
 
+type PrimaryFields []*ModelField
+
+func (pf PrimaryFields) FormatObject() func(string) string {
+	return func(name string) string {
+		// "<Article ArticleId=%v UserId=%v>", obj.ArticleId, obj.UserId
+		formats := make([]string, len(pf))
+		for i, field := range pf {
+			formats[i] = fmt.Sprintf("%s=%%v", field.Name)
+		}
+		outputs := make([]string, 1+len(pf))
+		outputs[0] = fmt.Sprintf("\"<%s %s>\"", name, strings.Join(formats, " "))
+		for i, field := range pf {
+			outputs[i+1] = fmt.Sprintf("obj.%s", field.Name)
+		}
+		return strings.Join(outputs, ", ")
+	}
+}
+
+func (pf PrimaryFields) FormatIncrementId() func() string {
+	// obj.Id = {{if eq .PrimaryField.Type "int64"}}id{{else}}{{.PrimaryField.Type}}(id){{end}}
+	return func() string {
+		for _, field := range pf {
+			if field.IsAutoIncrement {
+				if field.Type == "int64" {
+					return fmt.Sprintf("obj.%s = id", field.Name)
+				} else {
+					return fmt.Sprintf("obj.%s = %s(id)", field.Name, field.Type)
+				}
+			}
+		}
+		return ""
+	}
+}
+
+func (pf PrimaryFields) FormatFilters() func(string) string {
+	// filter := {{.Name}}Objs.Filter{{.PrimaryField.Name}}("=", obj.{{.PrimaryField.Name}})
+	return func(name string) string {
+		filters := make([]string, len(pf))
+		for i, field := range pf {
+			if i == 0 {
+				filters[i] = fmt.Sprintf("filter := %sObjs.Filter%s(\"=\", obj.%s)", name, field.Name, field.Name)
+			} else {
+				filters[i] = fmt.Sprintf("filter = filter.And(%sObjs.Filter%s(\"=\", obj.%s))", name, field.Name, field.Name)
+			}
+		}
+		return strings.Join(filters, "\n")
+	}
+}
+
 type ModelMeta struct {
-	Name         string
-	DbName       string
-	TableName    string
-	PrimaryField *ModelField
-	Fields       []ModelField
-	Uniques      []ModelField
-	config       CodeConfig
+	Name          string
+	DbName        string
+	TableName     string
+	PrimaryFields PrimaryFields
+	Fields        []ModelField
+	Uniques       []ModelField
+	config        CodeConfig
 }
 
 func (m ModelMeta) HasAutoIncrementPrimaryKey() bool {
-	return m.PrimaryField != nil && m.PrimaryField.IsAutoIncrement
+	for _, pField := range m.PrimaryFields {
+		if pField.IsAutoIncrement {
+			return true
+		}
+	}
+	return false
 }
 
 func (m ModelMeta) AllFields() string {

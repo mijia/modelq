@@ -2,6 +2,7 @@ begin;
 
 DROP TABLE IF EXISTS `article`;
 DROP TABLE IF EXISTS `user`;
+DROP TABLE IF EXISTS `comment`;
 
 CREATE TABLE IF NOT EXISTS `user` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -27,6 +28,15 @@ CREATE TABLE IF NOT EXISTS `article` (
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE current_timestamp,
     PRIMARY KEY (`id`),
     FOREIGN KEY (`user_id`) REFERENCES user(id) ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `comment` (
+    `user_id` BIGINT NOT NULL,
+    `article_id` BIGINT NOT NULL,
+    `content` TEXT DEFAULT NULL,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE current_timestamp,
+    PRIMARY KEY (`user_id`, `article_id`)
 ) ENGINE = InnoDB;
 
 commit;

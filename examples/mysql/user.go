@@ -27,7 +27,7 @@ type User struct {
 
 func (obj User) String() string {
 	if data, err := json.Marshal(obj); err != nil {
-		return fmt.Sprintf("<User Id=%d>", obj.Id)
+		return fmt.Sprintf("<User Id=%v>", obj.Id)
 	} else {
 		return string(data)
 	}
