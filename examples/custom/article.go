@@ -24,7 +24,7 @@ type Article struct {
 
 func (obj Article) String() string {
 	if data, err := json.Marshal(obj); err != nil {
-		return fmt.Sprintf("<Article Id=%d>", obj.Id)
+		return fmt.Sprintf("<Article Id=%v>", obj.Id)
 	} else {
 		return string(data)
 	}

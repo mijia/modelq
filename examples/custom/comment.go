@@ -11,24 +11,22 @@ import (
 	"time"
 )
 
-type User struct {
-	Id         int64     `json:"id"`
-	Name       string    `json:"name"`
-	Password   string    `json:"password"`
-	IsMarried  int       `json:"is_married"`
-	Age        int       `json:"age"`
+type Comment struct {
+	UserId     int64     `json:"user_id"`
+	ArticleId  int64     `json:"article_id"`
+	Content    string    `json:"content"`
 	CreateTime time.Time `json:"create_time"`
 	UpdateTime time.Time `json:"update_time"`
 }
 
-func (obj User) String() string {
+func (obj Comment) String() string {
 	if data, err := json.Marshal(obj); err != nil {
-		return fmt.Sprintf("<User Id=%v>", obj.Id)
+		return fmt.Sprintf("<Comment UserId=%v ArticleId=%v>", obj.UserId, obj.ArticleId)
 	} else {
 		return string(data)
 	}
 }
 
 func init() {
-	gob.Register(User{})
+	gob.Register(Comment{})
 }

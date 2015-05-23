@@ -23,7 +23,7 @@ type {{.Name}} struct {
 {{ define "obj_api" }}
 func (obj {{.Name}}) String() string {
 	if data, err := json.Marshal(obj); err != nil {
-		{{if .PrimaryField}}return fmt.Sprintf("<{{.Name}} {{.PrimaryField.Name}}=%d>", obj.{{.PrimaryField.Name}}){{else}}return fmt.Sprintf("<{{.Name}}>"){{end}}
+		{{if .PrimaryFields}}return fmt.Sprintf({{ call .PrimaryFields.FormatObject .Name }}){{else}}return "<{{.Name}}>"{{end}}
 	} else {
 		return string(data)
 	}
