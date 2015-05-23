@@ -243,6 +243,22 @@ func (m ModelMeta) InsertableFields() string {
 	return strings.Join(fields, ", ")
 }
 
+func (m ModelMeta) GetInsertableFields() []ModelField {
+	fields := make([]ModelField, 0, len(m.Fields))
+	for _, f := range m.Fields {
+		if f.IsPrimaryKey && f.IsAutoIncrement {
+			continue
+		}
+		autoTimestamp := strings.ToUpper(f.DefaultValue) == "CURRENT_TIMESTAMP" ||
+			strings.ToUpper(f.DefaultValue) == "NOW()"
+		if f.Type == "time.Time" && autoTimestamp && !m.config.touchTimestamp {
+			continue
+		}
+		fields = append(fields, f)
+	}
+	return fields
+}
+
 func (m ModelMeta) UpdatableFields() string {
 	fields := make([]string, 0, len(m.Fields))
 	for _, f := range m.Fields {
@@ -256,6 +272,21 @@ func (m ModelMeta) UpdatableFields() string {
 		fields = append(fields, fmt.Sprintf("\"%s\"", f.Name))
 	}
 	return strings.Join(fields, ", ")
+}
+
+func (m ModelMeta) GetUpdatableFields() []ModelField {
+	fields := make([]ModelField, 0, len(m.Fields))
+	for _, f := range m.Fields {
+		if f.IsPrimaryKey {
+			continue
+		}
+		autoUpdateTime := strings.ToUpper(f.Extra) == "ON UPDATE CURRENT_TIMESTAMP"
+		if autoUpdateTime && !m.config.touchTimestamp {
+			continue
+		}
+		fields = append(fields, f)
+	}
+	return fields
 }
 
 func (m ModelMeta) getTemplate(tmpl *template.Template, name string, defaultTmpl *template.Template) *template.Template {
