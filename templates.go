@@ -37,6 +37,15 @@ func (obj {{.Name}}) String() string {
 	}
 }
 
+func (obj {{.Name}}) Get(dbtx gmq.DbTx) ({{.Name}}, error) {
+	{{if .PrimaryFields}}{{ call .PrimaryFields.FormatFilters .Name }}
+	if result, err := {{.Name}}Objs.Select().Where(filter).One(dbtx); err != nil {
+		return obj, err
+	} else {
+		return result, nil	
+	}{{else}}return 0, gmq.ErrNoPrimaryKeyDefined{{end}}
+}
+
 func (obj {{.Name}}) Insert(dbtx gmq.DbTx) ({{.Name}}, error) {
 	{{if .HasAutoIncrementPrimaryKey}}if result, err := {{.Name}}Objs.Insert(obj).Run(dbtx); err != nil {
 		return obj, err
