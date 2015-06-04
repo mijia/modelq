@@ -41,6 +41,7 @@ func (m MysqlDriver) dataType(colDataType string) string {
 		"date":     "time.Time",
 		"datetime": "time.Time",
 		"decimal":  "float64",
+		"bit":      "uint64",
 	}
 	if fieldType, ok := kFieldTypes[strings.ToLower(colDataType)]; !ok {
 		return "string"
