@@ -102,10 +102,10 @@ func (q _Query) queryOne(dbtx DbTx, query string, params []interface{}, functor 
 }
 
 func (q _Query) query(dbtx DbTx, query string, params []interface{}, functor QueryRowVisitor) error {
-	start := time.Now().UnixNano()
+	start := time.Now()
 	defer func() {
 		if Debug {
-			log.Printf("Query SQL - [%s], params=%v, duration=%dms", query, params, (time.Now().UnixNano()-start)/1e6)
+			log.Printf("Query SQL - [%s], params=%v, duration=%s", query, params, time.Now().Sub(start))
 		}
 	}()
 
@@ -141,10 +141,10 @@ func (q _Query) query(dbtx DbTx, query string, params []interface{}, functor Que
 }
 
 func (q _Query) exec(dbtx DbTx, query string, params []interface{}) (sql.Result, error) {
-	start := time.Now().UnixNano()
+	start := time.Now()
 	defer func() {
 		if Debug {
-			log.Printf("Running SQL - [%s], params=%v, duration=%dms", query, params, (time.Now().UnixNano()-start)/1e6)
+			log.Printf("Running SQL - [%s], params=%v, duration=%s", query, params, time.Now().Sub(start))
 		}
 	}()
 
