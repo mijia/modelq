@@ -32,16 +32,17 @@ func (m MysqlDriver) LoadDatabaseSchema(dsnString, schema, tableNames string) (D
 
 func (m MysqlDriver) dataType(colDataType string) string {
 	kFieldTypes := map[string]string{
-		"bigint":   "int64",
-		"int":      "int",
-		"tinyint":  "int",
-		"char":     "string",
-		"varchar":  "string",
-		"blob":     "[]byte",
-		"date":     "time.Time",
-		"datetime": "time.Time",
-		"decimal":  "float64",
-		"bit":      "uint64",
+		"bigint":    "int64",
+		"int":       "int",
+		"tinyint":   "int",
+		"char":      "string",
+		"varchar":   "string",
+		"blob":      "[]byte",
+		"date":      "time.Time",
+		"datetime":  "time.Time",
+		"timestamp": "time.Time",
+		"decimal":   "float64",
+		"bit":       "uint64",
 	}
 	if fieldType, ok := kFieldTypes[strings.ToLower(colDataType)]; !ok {
 		return "string"
