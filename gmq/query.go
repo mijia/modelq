@@ -149,24 +149,11 @@ func (q _Query) exec(dbtx DbTx, query string, params []interface{}) (sql.Result,
 	}()
 
 	var result sql.Result
-	runInTx := func(tx *Tx) error {
-		if stmt, txErr := tx.Prepare(query); txErr != nil {
-			return txErr
-		} else {
-			result, txErr = stmt.Exec(params...)
-			return txErr
-		}
-	}
-	if db, ok := dbtx.(*Db); ok {
-		err := WithinTx(db, func(tx *Tx) error {
-			return runInTx(tx)
-		})
+	if stmt, err := dbtx.Prepare(query); err != nil {
 		return result, err
-	} else if tx, ok := dbtx.(*Tx); ok {
-		err := runInTx(tx)
-		return result, err
+	} else {
+		return stmt.Exec(params...)
 	}
-	return result, ErrNotDbTxObject
 }
 
 ////// Select Query
