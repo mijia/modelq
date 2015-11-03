@@ -35,6 +35,7 @@ func (m MysqlDriver) dataType(colDataType string) string {
 		"bigint":    "int64",
 		"int":       "int",
 		"tinyint":   "int",
+		"smallint":  "int",
 		"char":      "string",
 		"varchar":   "string",
 		"blob":      "[]byte",
