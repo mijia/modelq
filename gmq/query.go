@@ -218,7 +218,7 @@ func (q _SelectQuery) sqlStringAndParam(driverName string) (string, []interface{
 	query := fmt.Sprintf("SELECT %s FROM %s",
 		strings.Join(fields, ", "),
 		tableNamewithAlias(schema, table, alias, driverName))
-	if remains, extras := q.sqlRemains(alias, driverName); remains != "" && len(extras) > 0 {
+	if remains, extras := q.sqlRemains(alias, driverName); remains != "" || len(extras) > 0 {
 		query = fmt.Sprintf("%s %s", query, remains)
 		params = append(params, extras...)
 	}
