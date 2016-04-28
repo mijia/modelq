@@ -83,6 +83,7 @@ func generateModel(dbName, tName string, schema drivers.TableSchema, config Code
 			Name:            toCapitalCase(col.ColumnName),
 			ColumnName:      col.ColumnName,
 			Type:            col.DataType,
+			IsNullable:      strings.ToUpper(col.IsNullable) == "YES",
 			JsonMeta:        fmt.Sprintf("`json:\"%s\"`", col.ColumnName),
 			IsPrimaryKey:    strings.ToUpper(col.ColumnKey) == "PRI",
 			IsUniqueKey:     strings.ToUpper(col.ColumnKey) == "UNI",
@@ -134,6 +135,7 @@ type ModelField struct {
 	ColumnName      string
 	Type            string
 	JsonMeta        string
+	IsNullable      bool
 	IsPrimaryKey    bool
 	IsUniqueKey     bool
 	IsIndexed       bool

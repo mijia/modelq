@@ -15,6 +15,7 @@ type Column struct {
 	ColumnKey    string
 	Extra        string
 	Comment      string
+	IsNullable   string
 }
 
 type TableSchema []Column
