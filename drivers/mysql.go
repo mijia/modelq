@@ -76,6 +76,7 @@ func (m MysqlDriver) queryColumns(db *gmq.Db, dbName string, tables string, dbSc
 			ColumnKey:    col.ColumnKey,
 			Extra:        col.Extra,
 			Comment:      col.ColumnComment,
+			IsNullable:   col.IsNullable,
 		}
 		dbSchema[col.TableName] = append(dbSchema[col.TableName], sCol)
 		return true

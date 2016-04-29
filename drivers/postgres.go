@@ -125,6 +125,7 @@ func (p PostgresDriver) queryColumns(db *gmq.Db, dbName string, tables string, d
 			DataType:     p.dataType(col.DataType),
 			ColumnKey:    columnKey,
 			Extra:        extra,
+			IsNullable:   col.IsNullable,
 		}
 		dbSchema[col.TableName] = append(dbSchema[col.TableName], sCol)
 		return true
