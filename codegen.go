@@ -27,7 +27,14 @@ func (cc CodeConfig) MustCompileTemplate() *template.Template {
 	if cc.template == "" {
 		return nil
 	}
-	return template.Must(template.ParseFiles(cc.template))
+	funcMap := template.FuncMap{
+		"ToUpper": strings.ToUpper,
+		"ToLower": strings.ToLower,
+	}
+	tmpl := template.New("tmp").Funcs(funcMap)
+	
+	tmpl, err := tmpl.ParseFiles(cc.template)
+	return template.Must(tmpl, err)
 }
 
 func generateModels(dbName string, dbSchema drivers.DbSchema, config CodeConfig) {
