@@ -8,6 +8,7 @@ import (
 	"path"
 	"strings"
 	"text/template"
+	"unicode"
 
 	"github.com/mijia/modelq/drivers"
 )
@@ -30,9 +31,14 @@ func (cc CodeConfig) MustCompileTemplate() *template.Template {
 	funcMap := template.FuncMap{
 		"ToUpper": strings.ToUpper,
 		"ToLower": strings.ToLower,
+		"FirstLower": func(s string) string {
+			b := []rune(s)
+			b[0] = unicode.ToLower(b[0])
+			return string(b)
+		},
 	}
 	tmpl := template.New("tmp").Funcs(funcMap)
-	
+
 	tmpl, err := tmpl.ParseFiles(cc.template)
 	return template.Must(tmpl, err)
 }
