@@ -36,6 +36,25 @@ func (cc CodeConfig) MustCompileTemplate() *template.Template {
 			b[0] = unicode.ToLower(b[0])
 			return string(b)
 		},
+		"First": func(s string) string {
+			if "" == s {
+				return ""
+			}
+			return s[:1]
+		},
+		"SubStr": func(from int, to int, s string) string {
+			l := len(s)
+			if from > l {
+				return ""
+			}
+			if to > l {
+				return s[from:]
+			}
+			if 0 == to {
+				return s[from:]
+			}
+			return s[from:to]
+		},
 	}
 	tmpl := template.New("tmp").Funcs(funcMap)
 
