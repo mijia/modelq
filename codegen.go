@@ -110,6 +110,7 @@ func generateModel(dbName, tName string, schema drivers.TableSchema, config Code
 		config:    config,
 	}
 	needTime := false
+	needFmt := false
 	for i, col := range schema {
 		field := ModelField{
 			Name:            toCapitalCase(col.ColumnName),
@@ -130,6 +131,7 @@ func generateModel(dbName, tName string, schema drivers.TableSchema, config Code
 		}
 		if field.IsPrimaryKey {
 			model.PrimaryFields = append(model.PrimaryFields, &field)
+			needFmt = true
 		}
 
 		if field.IsUniqueKey {
@@ -143,7 +145,7 @@ func generateModel(dbName, tName string, schema drivers.TableSchema, config Code
 		model.Fields[i] = field
 	}
 
-	if err := model.GenHeader(w, tmpl, needTime); err != nil {
+	if err := model.GenHeader(w, tmpl, needTime, needFmt); err != nil {
 		return fmt.Errorf("[%s] Fail to gen model header, %s", tName, err)
 	}
 	if err := model.GenStruct(w, tmpl); err != nil {
@@ -340,12 +342,13 @@ func (m ModelMeta) getTemplate(tmpl *template.Template, name string, defaultTmpl
 	return defaultTmpl
 }
 
-func (m ModelMeta) GenHeader(w *bufio.Writer, tmpl *template.Template, importTime bool) error {
+func (m ModelMeta) GenHeader(w *bufio.Writer, tmpl *template.Template, importTime, importFmt bool) error {
 	return m.getTemplate(tmpl, "header", tmHeader).Execute(w, map[string]interface{}{
 		"DbName":     m.DbName,
 		"TableName":  m.TableName,
 		"PkgName":    m.config.packageName,
 		"ImportTime": importTime,
+		"ImportFmt":  importFmt,
 	})
 }
 
