@@ -12,7 +12,7 @@ package {{.PkgName}}
 import (
 	"encoding/json"
 	"encoding/gob"
-	"fmt"
+	{{if .ImportFmt}}"fmt"{{end}}
 	"strings"
 	"github.com/mijia/modelq/gmq"
 	"database/sql"
@@ -43,7 +43,7 @@ func (obj {{.Name}}) Get(dbtx gmq.DbTx) ({{.Name}}, error) {
 		return obj, err
 	} else {
 		return result, nil	
-	}{{else}}return 0, gmq.ErrNoPrimaryKeyDefined{{end}}
+	}{{else}}return obj, gmq.ErrNoPrimaryKeyDefined{{end}}
 }
 
 func (obj {{.Name}}) Insert(dbtx gmq.DbTx) ({{.Name}}, error) {
