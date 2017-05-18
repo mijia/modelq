@@ -187,6 +187,7 @@ func (f ModelField) ConverterFuncName() string {
 		"time.Time": "AsTime",
 		"float64":   "AsFloat64",
 		"bool":      "AsBool",
+                "[]byte":    "AsByteArray",
 	}
 	if c, ok := convertors[f.Type]; ok {
 		return c
