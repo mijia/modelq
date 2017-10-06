@@ -73,7 +73,7 @@ Can't do so far
 
 This is only a early rough implementation, missing a lot of things so far.
 
-* count(*), distinct, sum, average and etc. Definitely will get those.
+* distinct, sum, average and etc. Definitely will get those.
 * Joins and Unions. Those seems very likely to the count/distinct/sum and etc. Complicated data structure may be needed.
 * The generated models rely on the modelq/gmq package, I am not sure if this would be OK, or could this be changable and plugable, no idea so far.
 * No relations for complicated modeling (maybe will never consider this)
