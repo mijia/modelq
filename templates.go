@@ -14,7 +14,7 @@ import (
 	"encoding/gob"
 	{{if .ImportFmt}}"fmt"{{end}}
 	"strings"
-	"github.com/mijia/modelq/gmq"
+	"github.com/samingostar/modelq/gmq"
 	"database/sql"
 	{{if .ImportTime}}"time"{{end}}
 )
@@ -161,6 +161,26 @@ func (q _{{.Name}}Query) List(dbtx gmq.DbTx) ([]{{.Name}}, error) {
 		result = append(result, obj)
 		return true
 	})
+	return result, err
+}
+
+func (q _{{.Name}}Query) Count(dbtx gmq.DbTx) (int, error) {
+	result := 0
+
+	err := q.Query.SelectCount(dbtx, func(columns []gmq.Column, rb []sql.RawBytes) bool {
+		if len(columns) == len(rb) {
+			for i := range columns {
+				if "_count" == columns[i].Name {
+					result = gmq.AsInt(rb[i])
+
+					return true
+				}
+			}
+		}
+
+		return true
+	})
+
 	return result, err
 }
 `

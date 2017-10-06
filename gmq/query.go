@@ -29,11 +29,13 @@ type _Query struct {
 	orderBy []string
 	groupBy []string
 	limit   []int64
+	count	bool
 }
 
 func (q _Query) Exec(dbtx DbTx) (sql.Result, error)                  { return nil, ErrNotSupportedCall }
 func (q _Query) SelectOne(dbtx DbTx, functor QueryRowVisitor) error  { return ErrNotSupportedCall }
 func (q _Query) SelectList(dbtx DbTx, functor QueryRowVisitor) error { return ErrNotSupportedCall }
+func (q _Query) SelectCount(dbtx DbTx, functor QueryRowVisitor) error { return ErrNotSupportedCall }
 
 func (q _Query) sqlRemains(alias string, driverName string) (string, []interface{}) {
 	statements := make([]string, 0)
@@ -213,16 +215,32 @@ func (q _SelectQuery) SelectList(dbtx DbTx, functor QueryRowVisitor) error {
 	return q.query(dbtx, query, params, functor)
 }
 
+func (q _SelectQuery) SelectCount(dbtx DbTx, functor QueryRowVisitor) error {
+	q.columns = _Columns{Column{"_count", nil}}
+	q.count = true
+	query, params := q.sqlStringAndParam(dbtx.DriverName())
+
+	return q.query(dbtx, query, params, functor)
+}
+
 func (q _SelectQuery) sqlStringAndParam(driverName string) (string, []interface{}) {
 	schema, table, alias := q.model.Names()
+
 	fields, params := q.columns.fieldsAndParams(alias, driverName)
+
+	if q.count {
+		fields = []string{fmt.Sprintf("COUNT(*) AS %s", nameWithAlias("_count", "", driverName))}
+	}
+
 	query := fmt.Sprintf("SELECT %s FROM %s",
 		strings.Join(fields, ", "),
 		tableNamewithAlias(schema, table, alias, driverName))
+
 	if remains, extras := q.sqlRemains(alias, driverName); remains != "" || len(extras) > 0 {
 		query = fmt.Sprintf("%s %s", query, remains)
 		params = append(params, extras...)
 	}
+
 	return rebindSqlParams(query, driverName), params
 }
 
