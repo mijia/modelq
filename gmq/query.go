@@ -192,7 +192,7 @@ func (q _SelectQuery) Limit(offsets ...int64) Query {
 }
 
 func (q _SelectQuery) Page(number, size int) Query {
-	start := int64((number-1)*size + 1)
+	start := int64((number - 1) * size)
 	end := int64(size)
 	return q.Limit(start, end)
 }
