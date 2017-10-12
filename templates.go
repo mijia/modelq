@@ -14,7 +14,7 @@ import (
 	"encoding/gob"
 	{{if .ImportFmt}}"fmt"{{end}}
 	"strings"
-	"github.com/samingostar/modelq/gmq"
+	"github.com/mijia/modelq/gmq"
 	"database/sql"
 	{{if .ImportTime}}"time"{{end}}
 )
