@@ -80,6 +80,7 @@ type Query interface {
 	Exec(dbtx DbTx) (sql.Result, error)
 	SelectOne(dbtx DbTx, functor QueryRowVisitor) error
 	SelectList(dbtx DbTx, functor QueryRowVisitor) error
+	SelectCount(dbtx DbTx, functor QueryRowVisitor) error
 	Where(f Filter) Query
 	OrderBy(by ...string) Query
 	Limit(offsets ...int64) Query
