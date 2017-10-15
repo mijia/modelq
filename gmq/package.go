@@ -170,7 +170,12 @@ func AsFloat64(rb sql.RawBytes) float64 {
 func AsTime(rb sql.RawBytes) time.Time {
 	if t, err := time.Parse("2006-01-02 15:04:05", string(rb)); err == nil {
 		return t
+	} else if t, err := time.Parse("2006-01-02", string(rb)); err == nil {
+		return t
+	} else if t, err := time.Parse("15:04:05", string(rb)); err == nil {
+		return t
 	}
+
 	return time.Now()
 }
 
