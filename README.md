@@ -50,7 +50,7 @@ API
 
 Please check the `./examples/model_test.go` to take a glance. Some basic queries are supported, and to take advantage of the compiler, have to use many type guarded funcs defined for the model, e.g.
 
-```
+```go
 objs := models.UserObjs
 users, err := objs.Select("Id", "Name", "Age").
                    Where(objs.FilterAge(">=", 15).Or(objs.FilterAge("IN", 8, 9, 10))).
@@ -62,7 +62,7 @@ The `Age` of `User` model is a `int`, so go compiler will complain if a `string`
 
 To support different drivers, modelq have to use `gmq.Open` and `gmq.Beginx` for `gmq.Db` and `gmq.Tx` objects, like
 
-```
+```go
 db, err := gmq.Open("postgres", "dbname=blog sslmode=disable")
 tx, err := db.Beginx()
 gmq.WithinTx(db, func(tx *gmq.Tx) error {...})
