@@ -176,7 +176,7 @@ func AsTime(rb sql.RawBytes) time.Time {
 		return t
 	}
 
-	return time.Now()
+	return time.Time{}
 }
 
 func AsByteArray(rb sql.RawBytes) []byte {
