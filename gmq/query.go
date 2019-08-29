@@ -137,6 +137,8 @@ func (q _Query) query(dbtx DbTx, query string, params []interface{}, functor Que
 					break
 				}
 			}
+			if err := rows.Err(); err != nil {
+				return err
 		}
 	}
 	return nil
