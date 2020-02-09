@@ -29,12 +29,12 @@ type _Query struct {
 	orderBy []string
 	groupBy []string
 	limit   []int64
-	count	bool
+	count   bool
 }
 
-func (q _Query) Exec(dbtx DbTx) (sql.Result, error)                  { return nil, ErrNotSupportedCall }
-func (q _Query) SelectOne(dbtx DbTx, functor QueryRowVisitor) error  { return ErrNotSupportedCall }
-func (q _Query) SelectList(dbtx DbTx, functor QueryRowVisitor) error { return ErrNotSupportedCall }
+func (q _Query) Exec(dbtx DbTx) (sql.Result, error)                   { return nil, ErrNotSupportedCall }
+func (q _Query) SelectOne(dbtx DbTx, functor QueryRowVisitor) error   { return ErrNotSupportedCall }
+func (q _Query) SelectList(dbtx DbTx, functor QueryRowVisitor) error  { return ErrNotSupportedCall }
 func (q _Query) SelectCount(dbtx DbTx, functor QueryRowVisitor) error { return ErrNotSupportedCall }
 
 func (q _Query) sqlRemains(alias string, driverName string) (string, []interface{}) {
@@ -111,7 +111,8 @@ func (q _Query) query(dbtx DbTx, query string, params []interface{}, functor Que
 		}
 	}()
 
-	if stmt, err := dbtx.Prepare(query); err != nil {
+	stmt, err := dbtx.Prepare(query)
+	if err != nil {
 		return err
 	} else {
 		defer stmt.Close()
@@ -139,8 +140,10 @@ func (q _Query) query(dbtx DbTx, query string, params []interface{}, functor Que
 			}
 			if err := rows.Err(); err != nil {
 				return err
+			}
 		}
 	}
+
 	return nil
 }
 
